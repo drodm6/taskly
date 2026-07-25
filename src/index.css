@@ -1,6 +1,5 @@
 @import 'tailwindcss';
 
-/* ---------- fonts (unchanged from your original file) ---------- */
 @font-face {
   font-family: 'Inter';
   font-style: normal;
@@ -30,43 +29,17 @@
   src: url('https://static.figma.com/font/Fraunces_SOFT_WONK_opsz_wght__1') format('woff2');
 }
 
-/* =========================================================
-   THEME TOKENS
-   Same variable names as your original file — only the
-   VALUES changed, from the light/purple palette to the
-   black/orange/white palette you asked for.
-   ========================================================= */
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-display: 'Fraunces', Georgia, serif;
 
-  /* was #fafafa (light cream) -> now near-black page background */
   --color-canvas: #0a0a0a;
-
-  /* was #111111 (near-black text on light bg) -> now white text on dark bg */
   --color-ink: #ffffff;
-
-  /* was #6b7280 (gray-500) -> kept neutral so it still reads as "muted"
-     instead of competing with the orange accent */
   --color-ink-muted: #a3a3a3;
-
-  /* was #5b4fe9 (purple) -> now the orange accent from your design */
   --color-accent: #f97316;
-
-  /* was #ede9fe (light purple wash) -> now a soft, low-opacity orange
-     wash, used for tag badges / subtle highlighted backgrounds */
   --color-accent-light: rgba(249, 115, 22, 0.14);
-
-  /* was #e5e7eb (light gray border) -> a dark neutral border so cards
-     still read as separated on a black canvas */
   --color-border: #262626;
-
-  /* was #ffffff (white cards on cream page) -> now a dark charcoal
-     surface so cards sit one shade above pure black */
   --color-surface: #171717;
-
-  /* kept for compatibility with the token system; unused by the todo
-     app itself since it has no "done" state, but here if you add one */
   --color-done: #d1fae5;
   --color-done-text: #065f46;
 }
@@ -87,18 +60,18 @@ html, body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #f97316; /* was #d1d5db (gray) -> orange thumb to match accent */
+  background: #f97316;
   border-radius: 2px;
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator {
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator {
   opacity: 0.6;
   cursor: pointer;
-  /* inverts the default black calendar icon so it's visible on dark inputs */
   filter: invert(1);
 }
 
 ::selection {
-  background: #f97316; /* was #ede9fe (light purple) -> orange highlight */
+  background: #f97316;
   color: #0a0a0a;
 }
