@@ -575,23 +575,33 @@ export default function TodoApp() {
 
                     {todo.text}
 
-                    {todo.date && (
-                      <span className="inline text-xs text-[var(--color-ink-muted)] ml-2">
-                        {formatDate(todo.date)}
-                        {todo.time ? ` · ${todo.time}` : ""}
-                      </span>
-                    )}
+                    {/* date + tag (+ workspace badge) live in one flex-wrap
+                        row, set as its own line below the text ("block").
+                        Inside that row, flex-wrap lets date and tag sit
+                        side by side whenever there's room — the tag only
+                        drops to a second line if it doesn't fit next to
+                        the date, instead of always being forced down. */}
+                    {(todo.date || todo.tag || (activeWorkspaceId === "all" && todo.workspaceId)) && (
+                      <span className="flex flex-wrap items-center gap-2 mt-1">
+                        {todo.date && (
+                          <span className="text-xs text-[var(--color-ink-muted)]">
+                            {formatDate(todo.date)}
+                            {todo.time ? ` · ${todo.time}` : ""}
+                          </span>
+                        )}
 
-                    {todo.tag && (
-                      <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full ml-2 bg-[var(--color-accent-light)] text-[var(--color-accent)]">
-                        #{todo.tag}
-                      </span>
-                    )}
+                        {todo.tag && (
+                          <span className="inline-block text-xs font-semibold px-2 py-0.5 rounded-full bg-[var(--color-accent-light)] text-[var(--color-accent)]">
+                            #{todo.tag}
+                          </span>
+                        )}
 
-                    {/* only shown in "All", so you can tell which project a task belongs to */}
-                    {activeWorkspaceId === "all" && todo.workspaceId && (
-                      <span className="inline-block text-xs px-2 py-0.5 rounded-full ml-2 border border-[var(--color-border)] text-[var(--color-ink-muted)]">
-                        {getWorkspaceName(todo.workspaceId)}
+                        {/* only shown in "All", so you can tell which project a task belongs to */}
+                        {activeWorkspaceId === "all" && todo.workspaceId && (
+                          <span className="inline-block text-xs px-2 py-0.5 rounded-full border border-[var(--color-border)] text-[var(--color-ink-muted)]">
+                            {getWorkspaceName(todo.workspaceId)}
+                          </span>
+                        )}
                       </span>
                     )}
 
@@ -611,7 +621,7 @@ export default function TodoApp() {
                     </button>
                     <button
                       onClick={() => deleteTodo(todo.id)}
-                      className="px-3.5 py-2 text-[12px] font-semibold rounded-md bg-transparent border border-[var(--color-ink-muted)] text-[var(--color-ink)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+                      className="px-3.5 py-2 text-[13px] font-semibold rounded-md bg-transparent border border-[var(--color-ink-muted)] text-[var(--color-ink)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
                     >
                       Delete
                     </button>
