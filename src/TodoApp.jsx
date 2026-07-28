@@ -281,6 +281,29 @@ export default function TodoApp() {
     setShowProjectModal(true);
   }
 
+  // toggles the "hidden / private" flag for the workspace being created.
+  //
+  // BUG FIX: previously this only updated `draftWorkspaceHidden`, which
+  // is fine BEFORE any task has been added (that draft value gets read
+  // once, when the workspace is first created). But once a task has
+  // already been added, the workspace object already exists in the
+  // `workspaces` array with its `hidden` value locked in — toggling
+  // the draft afterward silently did nothing to that existing record.
+  // Now we also patch the real workspace record directly whenever one
+  // already exists, so the ghost icon works no matter when it's clicked.
+  function toggleDraftWorkspaceHidden() {
+    const nextHidden = !draftWorkspaceHidden;
+    setDraftWorkspaceHidden(nextHidden);
+
+    if (draftWorkspaceId !== null) {
+      setWorkspaces((prevWorkspaces) =>
+        prevWorkspaces.map((ws) =>
+          ws.id === draftWorkspaceId ? { ...ws, hidden: nextHidden } : ws
+        )
+      );
+    }
+  }
+
   function closeProjectModal() {
     setShowProjectModal(false);
     setDraftWorkspaceName("");
@@ -588,7 +611,7 @@ export default function TodoApp() {
                     </button>
                     <button
                       onClick={() => deleteTodo(todo.id)}
-                      className="px-3.5 py-2 text-[13px] font-semibold rounded-md bg-transparent border border-[var(--color-ink-muted)] text-[var(--color-ink)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
+                      className="px-3.5 py-2 text-[12px] font-semibold rounded-md bg-transparent border border-[var(--color-ink-muted)] text-[var(--color-ink)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent)] transition-colors"
                     >
                       Delete
                     </button>
@@ -602,7 +625,7 @@ export default function TodoApp() {
 
       {/* ---------- "+ New Task" modal ---------- */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center px-4">
+        <div className="fixed inset-0 z-40 bg-black/60 flex justify-center items-center px-4">
           <div className="w-full max-w-[380px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
             <h2 className="font-[var(--font-display)] text-lg text-[var(--color-ink)] m-0">New task</h2>
 
@@ -676,7 +699,7 @@ export default function TodoApp() {
 
       {/* ---------- "+ Project" modal ---------- */}
       {showProjectModal && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center px-4">
+        <div className="fixed inset-0 z-40 bg-black/60 flex justify-center items-center px-4">
           <div className="w-full max-w-[420px] max-h-[85vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
             <h2 className="font-[var(--font-display)] text-lg text-[var(--color-ink)] m-0">New workspace</h2>
 
@@ -690,7 +713,7 @@ export default function TodoApp() {
                 className="flex-1 min-w-0 px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors disabled:opacity-60"
               />
               <button
-                onClick={() => setDraftWorkspaceHidden((prev) => !prev)}
+                onClick={toggleDraftWorkspaceHidden}
                 aria-label="Toggle hidden workspace"
                 title="Hidden workspaces only appear under 👻 Hidden"
                 className={`shrink-0 w-9 h-9 rounded-full border-2 flex items-center justify-center transition-colors ${
@@ -794,9 +817,18 @@ export default function TodoApp() {
         </div>
       )}
 
-      {/* ---------- edit modal ---------- */}
+      {/* ---------- edit modal ----------
+          BUG FIX: this needs a HIGHER z-index than every other modal.
+          It can be opened either from the home screen list, or from
+          inside the settings modal (which is already open at that
+          point). Without an explicit z-index, whichever modal appears
+          later in the JSX simply painted on top by default — so the
+          edit modal was technically open, just invisible underneath
+          the settings modal. z-50 guarantees it always renders on top,
+          and the settings modal stays open behind it, exactly where
+          you left it, once you close or apply the edit. */}
       {editingId !== null && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center px-4">
+        <div className="fixed inset-0 z-50 bg-black/60 flex justify-center items-center px-4">
           <div className="w-full max-w-[360px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
             <h2 className="font-[var(--font-display)] text-lg text-[var(--color-ink)] m-0">Edit todo</h2>
 
@@ -841,7 +873,7 @@ export default function TodoApp() {
 
       {/* ---------- settings modal: manage all workspaces ---------- */}
       {showSettingsModal && (
-        <div className="fixed inset-0 bg-black/60 flex justify-center items-center px-4">
+        <div className="fixed inset-0 z-40 bg-black/60 flex justify-center items-center px-4">
           <div className="w-full max-w-[440px] max-h-[85vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-4 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
             <div className="flex items-center justify-between">
               <h2 className="font-[var(--font-display)] text-lg text-[var(--color-ink)] m-0">Manage workspaces</h2>
