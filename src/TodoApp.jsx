@@ -1,6 +1,62 @@
 import { useState, useEffect } from "react";
 
 // =========================================================
+// STATIC DATA (lives outside the component — never changes,
+// doesn't depend on props or state)
+// =========================================================
+
+// preset color palette for workspaces. A fixed palette (rather than a
+// free-form color picker) keeps every project looking intentional and
+// guarantees good contrast with the black background + white text.
+const WORKSPACE_COLORS = [
+  { name: "Orange", value: "#f97316" },
+  { name: "Blue", value: "#3b82f6" },
+  { name: "Green", value: "#22c55e" },
+  { name: "Pink", value: "#ec4899" },
+  { name: "Purple", value: "#a855f7" },
+  { name: "Red", value: "#ef4444" },
+  { name: "Yellow", value: "#eab308" },
+  { name: "Teal", value: "#14b8a6" },
+];
+
+// =========================================================
+// SMALL PRESENTATIONAL HELPERS
+// (plain functions returning JSX — not connected to state,
+// just used to avoid repeating the same markup twice)
+// =========================================================
+
+// one number + label tile, used in the Dashboard modal
+function StatCard({ label, value }) {
+  return (
+    <div className="border border-[var(--color-border)] rounded-lg p-3.5 flex flex-col items-center justify-center gap-1 text-center">
+      <span className="text-2xl font-bold text-[var(--color-accent)]">{value}</span>
+      <span className="text-xs text-[var(--color-ink-muted)]">{label}</span>
+    </div>
+  );
+}
+
+// row of clickable color circles, used in both the "+ Project" modal
+// and the settings modal's per-workspace editor
+function ColorSwatchRow({ selectedColor, onSelect }) {
+  return (
+    <div className="flex-1 flex flex-wrap gap-2">
+      {WORKSPACE_COLORS.map((c) => (
+        <button
+          key={c.value}
+          type="button"
+          onClick={() => onSelect(c.value)}
+          title={c.name}
+          style={{ backgroundColor: c.value }}
+          className={`w-7 h-7 rounded-full border-2 transition-transform ${
+            selectedColor === c.value ? "border-white scale-110" : "border-transparent"
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
+// =========================================================
 // TodoApp
 // =========================================================
 export default function TodoApp() {
@@ -10,29 +66,31 @@ export default function TodoApp() {
 
   // each todo is an object:
   // { id, text, date, tag, completed, type, time, workspaceId }
-  // - workspaceId: null = a general task (not in any project),
-  //   otherwise it matches the id of a workspace below
   const [todos, setTodos] = useState([]);
 
-  // each workspace ("project") is an object: { id, name, hidden }
+  // each workspace ("project") is an object:
+  // { id, name, icon, color, hidden }
   const [workspaces, setWorkspaces] = useState([]);
 
-  // which view the home screen is currently showing:
-  // "all" = every task from every non-hidden workspace + general tasks
-  // a workspace id = only that workspace's tasks
+  // which workspace tab is selected: "all" or a workspace id
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("all");
 
-  // controls the small dropdown that lists hidden workspaces,
-  // opened via the "👻 Hidden" tab
-  const [showHiddenPicker, setShowHiddenPicker] = useState(false);
+  // "tasks" = normal view, filtered by activeWorkspaceId above
+  // "done"  = a dedicated view showing every completed task across
+  //           every non-hidden workspace, ignoring activeWorkspaceId
+  const [viewMode, setViewMode] = useState("tasks");
 
-  // controls the "manage workspaces" modal opened via the ⚙ icon
+  const [showHiddenPicker, setShowHiddenPicker] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  // a ticking clock — updates every second so any visible
-  // countdown badges recalculate their remaining time live
-  const [now, setNow] = useState(() => new Date());
+  // ---- sidebar navigation (☰ menu) ----
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [projectsExpanded, setProjectsExpanded] = useState(false);
+  const [showDashboardModal, setShowDashboardModal] = useState(false);
 
+  // a ticking clock — updates every second so countdown badges and
+  // the "active countdowns" dashboard stat stay live
+  const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const intervalId = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(intervalId);
@@ -49,26 +107,24 @@ export default function TodoApp() {
   // ---- "+ Project" modal (create a workspace + tasks inside it) ----
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [draftWorkspaceName, setDraftWorkspaceName] = useState("");
+  const [draftWorkspaceIcon, setDraftWorkspaceIcon] = useState("");
+  const [draftWorkspaceColor, setDraftWorkspaceColor] = useState(WORKSPACE_COLORS[0].value);
   const [draftWorkspaceHidden, setDraftWorkspaceHidden] = useState(false);
   // becomes a real id the moment the workspace is first actually created
-  // (on the first "Add" click, or on "Done" if it has a name)
   const [draftWorkspaceId, setDraftWorkspaceId] = useState(null);
-  // task fields for adding tasks *inside* the project modal — kept
-  // separate from newText/newDate/etc above so the two modals never
-  // interfere with each other's form state
+  // task fields for adding tasks *inside* the project modal
   const [pText, setPText] = useState("");
   const [pDate, setPDate] = useState("");
   const [pTag, setPTag] = useState("");
   const [pType, setPType] = useState("standard");
   const [pTime, setPTime] = useState("");
 
-  // ---- edit modal (shared by both the home list and the settings modal) ----
+  // ---- edit modal (shared by the home list and the settings modal) ----
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editTag, setEditTag] = useState("");
 
-  // current text typed into the search bar
   const [searchQuery, setSearchQuery] = useState("");
 
   // =======================================================
@@ -118,10 +174,23 @@ export default function TodoApp() {
     return `${totalMinutes}min left`;
   }
 
-  // looks up a workspace's name from its id, for display purposes
-  function getWorkspaceName(workspaceId) {
-    const ws = workspaces.find((w) => w.id === workspaceId);
-    return ws ? ws.name : null;
+  // looks up a full workspace object by id (name / icon / color / hidden)
+  function getWorkspace(workspaceId) {
+    return workspaces.find((w) => w.id === workspaceId) || null;
+  }
+
+  // ids of every workspace currently marked hidden — used to exclude
+  // their tasks from "All" and from the Dashboard/Done views
+  function getHiddenWorkspaceIds() {
+    return workspaces.filter((w) => w.hidden).map((w) => w.id);
+  }
+
+  // completion percentage for one workspace's tasks (null if it has none)
+  function getWorkspaceCompletion(workspaceId) {
+    const wsTasks = todos.filter((t) => t.workspaceId === workspaceId);
+    if (wsTasks.length === 0) return null;
+    const doneCount = wsTasks.filter((t) => t.completed).length;
+    return Math.round((doneCount / wsTasks.length) * 100);
   }
 
   // =======================================================
@@ -151,15 +220,21 @@ export default function TodoApp() {
   // =======================================================
 
   function renameWorkspace(id, newName) {
+    setWorkspaces((prev) => prev.map((ws) => (ws.id === id ? { ...ws, name: newName } : ws)));
+  }
+
+  function setWorkspaceIcon(id, newIcon) {
     setWorkspaces((prev) =>
-      prev.map((ws) => (ws.id === id ? { ...ws, name: newName } : ws))
+      prev.map((ws) => (ws.id === id ? { ...ws, icon: newIcon.slice(0, 6) } : ws))
     );
   }
 
+  function setWorkspaceColor(id, newColor) {
+    setWorkspaces((prev) => prev.map((ws) => (ws.id === id ? { ...ws, color: newColor } : ws)));
+  }
+
   function toggleWorkspaceHidden(id) {
-    setWorkspaces((prev) =>
-      prev.map((ws) => (ws.id === id ? { ...ws, hidden: !ws.hidden } : ws))
-    );
+    setWorkspaces((prev) => prev.map((ws) => (ws.id === id ? { ...ws, hidden: !ws.hidden } : ws)));
   }
 
   function deleteWorkspace(id) {
@@ -171,7 +246,6 @@ export default function TodoApp() {
     setWorkspaces((prev) => prev.filter((ws) => ws.id !== id));
     setTodos((prev) => prev.filter((todo) => todo.workspaceId !== id));
 
-    // if you were viewing the workspace you just deleted, fall back to "All"
     if (activeWorkspaceId === id) setActiveWorkspaceId("all");
   }
 
@@ -190,24 +264,24 @@ export default function TodoApp() {
   }
 
   // =======================================================
-  // SEARCH / FILTER / ACTIVE WORKSPACE VIEW
+  // SEARCH / FILTER / ACTIVE VIEW
   // =======================================================
 
-  // this is the single function that decides what shows on the home
-  // screen: it applies the workspace filter first, then the search
-  // filter on top, then sorts — in that order
+  // the single function deciding what the home screen shows: applies
+  // the view mode (tasks vs. done) and workspace filter first, then
+  // search on top, then sorts — in that order
   function getVisibleTodos() {
     let result = todos;
+    const hiddenIds = getHiddenWorkspaceIds();
 
-    if (activeWorkspaceId === "all") {
-      // "All" excludes tasks that live inside a hidden workspace —
-      // general tasks (workspaceId === null) and tasks in any
-      // visible workspace both still show up here
-      const hiddenWorkspaceIds = workspaces.filter((w) => w.hidden).map((w) => w.id);
-      result = result.filter((todo) => !hiddenWorkspaceIds.includes(todo.workspaceId));
+    if (viewMode === "done") {
+      // Done view ignores whichever tab is selected — it always shows
+      // every completed task, from every non-hidden workspace or with
+      // no workspace at all
+      result = result.filter((todo) => todo.completed && !hiddenIds.includes(todo.workspaceId));
+    } else if (activeWorkspaceId === "all") {
+      result = result.filter((todo) => !hiddenIds.includes(todo.workspaceId));
     } else {
-      // a specific workspace tab (or a hidden workspace picked from
-      // the 👻 Hidden list) — only show tasks that belong to it
       result = result.filter((todo) => todo.workspaceId === activeWorkspaceId);
     }
 
@@ -224,10 +298,43 @@ export default function TodoApp() {
   }
 
   // =======================================================
+  // SIDEBAR NAVIGATION (☰ menu)
+  // =======================================================
+
+  function closeSidebar() {
+    setShowSidebar(false);
+  }
+
+  function goToWorkspace(workspaceId) {
+    setViewMode("tasks");
+    setActiveWorkspaceId(workspaceId);
+    setShowHiddenPicker(false);
+    closeSidebar();
+  }
+
+  function goToAllTasks() {
+    setViewMode("tasks");
+    setActiveWorkspaceId("all");
+    setShowHiddenPicker(false);
+    closeSidebar();
+  }
+
+  function goToDone() {
+    setViewMode("done");
+    closeSidebar();
+  }
+
+  function openDashboard() {
+    setShowDashboardModal(true);
+    closeSidebar();
+  }
+
+  // =======================================================
   // "+ NEW TASK" MODAL (home-screen quick add)
   // =======================================================
 
   function openAddModal() {
+    setViewMode("tasks"); // adding a task always returns you to the normal task view
     setShowAddModal(true);
   }
 
@@ -264,9 +371,6 @@ export default function TodoApp() {
       completed: false,
       type: newType,
       time: newType === "countdown" ? newTime : "",
-      // if you're currently viewing a specific workspace, the new
-      // task automatically joins it; if you're on "All", it's a
-      // general task with no workspace
       workspaceId: activeWorkspaceId === "all" ? null : activeWorkspaceId,
     });
 
@@ -278,35 +382,15 @@ export default function TodoApp() {
   // =======================================================
 
   function openProjectModal() {
+    setViewMode("tasks");
     setShowProjectModal(true);
-  }
-
-  // toggles the "hidden / private" flag for the workspace being created.
-  //
-  // BUG FIX: previously this only updated `draftWorkspaceHidden`, which
-  // is fine BEFORE any task has been added (that draft value gets read
-  // once, when the workspace is first created). But once a task has
-  // already been added, the workspace object already exists in the
-  // `workspaces` array with its `hidden` value locked in — toggling
-  // the draft afterward silently did nothing to that existing record.
-  // Now we also patch the real workspace record directly whenever one
-  // already exists, so the ghost icon works no matter when it's clicked.
-  function toggleDraftWorkspaceHidden() {
-    const nextHidden = !draftWorkspaceHidden;
-    setDraftWorkspaceHidden(nextHidden);
-
-    if (draftWorkspaceId !== null) {
-      setWorkspaces((prevWorkspaces) =>
-        prevWorkspaces.map((ws) =>
-          ws.id === draftWorkspaceId ? { ...ws, hidden: nextHidden } : ws
-        )
-      );
-    }
   }
 
   function closeProjectModal() {
     setShowProjectModal(false);
     setDraftWorkspaceName("");
+    setDraftWorkspaceIcon("");
+    setDraftWorkspaceColor(WORKSPACE_COLORS[0].value);
     setDraftWorkspaceHidden(false);
     setDraftWorkspaceId(null);
     setPText("");
@@ -316,8 +400,24 @@ export default function TodoApp() {
     setPTime("");
   }
 
-  // adds one task into the workspace being created — creates the
-  // workspace itself on the very first call, reuses it after that
+  // updates one or more of the draft workspace's meta fields (hidden /
+  // icon / color). BUG-FIX PATTERN: if the workspace has already been
+  // created (because a task was added before this change), the change
+  // must ALSO be written directly onto that existing workspace record —
+  // otherwise it only updates the draft, which nothing reads anymore
+  // once the real workspace object already exists.
+  function updateDraftWorkspaceMeta(updates) {
+    if ("hidden" in updates) setDraftWorkspaceHidden(updates.hidden);
+    if ("icon" in updates) setDraftWorkspaceIcon(updates.icon);
+    if ("color" in updates) setDraftWorkspaceColor(updates.color);
+
+    if (draftWorkspaceId !== null) {
+      setWorkspaces((prev) =>
+        prev.map((ws) => (ws.id === draftWorkspaceId ? { ...ws, ...updates } : ws))
+      );
+    }
+  }
+
   function handleAddTaskToProject() {
     if (draftWorkspaceName.trim() === "") {
       alert("Please name your workspace first.");
@@ -337,14 +437,20 @@ export default function TodoApp() {
       return;
     }
 
-    // create the workspace now, but only the first time this modal
-    // session adds a task — every later click reuses draftWorkspaceId
+    // create the workspace on the first task add only; every later
+    // click in this session reuses the same draftWorkspaceId
     let workspaceId = draftWorkspaceId;
     if (workspaceId === null) {
       workspaceId = Date.now();
       setWorkspaces((prev) => [
         ...prev,
-        { id: workspaceId, name: draftWorkspaceName.trim(), hidden: draftWorkspaceHidden },
+        {
+          id: workspaceId,
+          name: draftWorkspaceName.trim(),
+          icon: draftWorkspaceIcon.trim(),
+          color: draftWorkspaceColor,
+          hidden: draftWorkspaceHidden,
+        },
       ]);
       setDraftWorkspaceId(workspaceId);
     }
@@ -360,8 +466,6 @@ export default function TodoApp() {
       workspaceId,
     });
 
-    // clear only the task fields — name/hidden stay, and the modal
-    // stays open so more tasks can be added
     setPText("");
     setPDate("");
     setPTag("");
@@ -369,9 +473,6 @@ export default function TodoApp() {
     setPTime("");
   }
 
-  // "Done" — finalizes the workspace (creating it even if no tasks
-  // were added, as long as it has a name) and switches the home
-  // screen straight to that workspace's view
   function handleFinishProject() {
     let workspaceId = draftWorkspaceId;
 
@@ -379,11 +480,18 @@ export default function TodoApp() {
       workspaceId = Date.now();
       setWorkspaces((prev) => [
         ...prev,
-        { id: workspaceId, name: draftWorkspaceName.trim(), hidden: draftWorkspaceHidden },
+        {
+          id: workspaceId,
+          name: draftWorkspaceName.trim(),
+          icon: draftWorkspaceIcon.trim(),
+          color: draftWorkspaceColor,
+          hidden: draftWorkspaceHidden,
+        },
       ]);
     }
 
     if (workspaceId !== null) {
+      setViewMode("tasks");
       setActiveWorkspaceId(workspaceId);
     }
 
@@ -427,21 +535,67 @@ export default function TodoApp() {
     closeEditModal();
   }
 
+  // =======================================================
+  // DERIVED VALUES (recomputed every render — never stored in state)
+  // =======================================================
+
   const visibleTodos = getVisibleTodos();
   const visibleWorkspaceTabs = workspaces.filter((ws) => !ws.hidden);
   const hiddenWorkspaces = workspaces.filter((ws) => ws.hidden);
+
+  // ---- Dashboard stats ----
+  const hiddenWorkspaceIds = getHiddenWorkspaceIds();
+  const dashboardTasks = todos.filter((t) => !hiddenWorkspaceIds.includes(t.workspaceId));
+  const totalTasksCount = dashboardTasks.length;
+  const completedTasksCount = dashboardTasks.filter((t) => t.completed).length;
+  const completionRate =
+    totalTasksCount === 0 ? 0 : Math.round((completedTasksCount / totalTasksCount) * 100);
+  const totalProjectsCount = visibleWorkspaceTabs.length;
+  const activeCountdownsCount = dashboardTasks.filter((t) => {
+    if (t.type !== "countdown" || !t.date || !t.time) return false;
+    const target = combineDateAndTime(t.date, t.time);
+    return target && target.getTime() > now.getTime();
+  }).length;
+  const todayString = getTodayString();
+  const dueTodayCount = dashboardTasks.filter((t) => t.date === todayString && !t.completed).length;
+
+  // what the small heading above the task list should read
+  const viewTitle =
+    viewMode === "done"
+      ? "Done"
+      : activeWorkspaceId === "all"
+      ? "All tasks"
+      : getWorkspace(activeWorkspaceId)?.name || "Tasks";
 
   // =======================================================
   // RENDER
   // =======================================================
   return (
-    <div className="min-h-screen bg-[var(--color-canvas)] flex justify-center items-start px-4 py-10 sm:py-16">
-      <div className="w-full max-w-[560px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-5 sm:p-8 shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+    // FIX: this used to be a centered flex wrapper holding a separate,
+    // narrower "surface" card — which read as a small floating card on
+    // top of a mostly-empty black page. Now the whole page IS the
+    // surface: one continuous background, no nested box, full width.
+    <div className="min-h-screen bg-[var(--color-canvas)] text-[var(--color-ink)]">
 
-        {/* ---------- title ---------- */}
-        <h1 className="font-[var(--font-display)] text-2xl sm:text-3xl font-semibold text-center uppercase tracking-wide text-[var(--color-ink)] border-b-[3px] border-[var(--color-accent)] pb-3 mb-6">
+      {/* ---------- header bar: hamburger sits in-flow, top-left,
+          instead of a fixed floating button that could overlap
+          content or sit awkwardly on small screens ---------- */}
+      <div className="flex items-center gap-3 px-4 sm:px-8 py-4 border-b border-[var(--color-border)]">
+        <button
+          onClick={() => setShowSidebar(true)}
+          aria-label="Open menu"
+          className="shrink-0 w-10 h-10 flex items-center justify-center rounded-lg bg-[var(--color-accent)] text-black text-xl font-bold hover:brightness-110 transition-all"
+        >
+          ☰
+        </button>
+        <h1 className="font-[var(--font-display)] text-xl sm:text-2xl font-semibold uppercase tracking-wide m-0">
           Taskly
         </h1>
+      </div>
+
+      {/* ---------- main content — fills the screen on mobile, caps
+          at a comfortable reading width and centers on larger screens ---------- */}
+      <div className="max-w-[700px] mx-auto px-4 sm:px-8 py-6">
 
         {/* ---------- search bar ---------- */}
         <input
@@ -471,9 +625,9 @@ export default function TodoApp() {
         {/* ---------- workspace tabs ---------- */}
         <div className="flex items-center gap-2 overflow-x-auto whitespace-nowrap pb-2 mb-1 [scrollbar-width:none]">
           <button
-            onClick={() => { setActiveWorkspaceId("all"); setShowHiddenPicker(false); }}
+            onClick={goToAllTasks}
             className={`shrink-0 px-3.5 py-1.5 text-[13px] font-semibold rounded-full border transition-colors ${
-              activeWorkspaceId === "all"
+              viewMode === "tasks" && activeWorkspaceId === "all"
                 ? "bg-[var(--color-accent)] border-[var(--color-accent)] text-black"
                 : "bg-transparent border-[var(--color-border)] text-[var(--color-ink-muted)]"
             }`}
@@ -481,19 +635,25 @@ export default function TodoApp() {
             All
           </button>
 
-          {visibleWorkspaceTabs.map((ws) => (
-            <button
-              key={ws.id}
-              onClick={() => { setActiveWorkspaceId(ws.id); setShowHiddenPicker(false); }}
-              className={`shrink-0 px-3.5 py-1.5 text-[13px] font-semibold rounded-full border transition-colors ${
-                activeWorkspaceId === ws.id
-                  ? "bg-[var(--color-accent)] border-[var(--color-accent)] text-black"
-                  : "bg-transparent border-[var(--color-border)] text-[var(--color-ink-muted)]"
-              }`}
-            >
-              {ws.name}
-            </button>
-          ))}
+          {visibleWorkspaceTabs.map((ws) => {
+            const isActive = viewMode === "tasks" && activeWorkspaceId === ws.id;
+            return (
+              <button
+                key={ws.id}
+                onClick={() => goToWorkspace(ws.id)}
+                style={
+                  isActive
+                    ? { backgroundColor: ws.color, borderColor: ws.color }
+                    : { borderColor: ws.color, color: ws.color }
+                }
+                className={`shrink-0 px-3.5 py-1.5 text-[13px] font-semibold rounded-full border transition-colors ${
+                  isActive ? "text-black" : "bg-transparent"
+                }`}
+              >
+                {ws.icon} {ws.name}
+              </button>
+            );
+          })}
 
           <button
             onClick={() => setShowHiddenPicker((prev) => !prev)}
@@ -520,26 +680,42 @@ export default function TodoApp() {
               hiddenWorkspaces.map((ws) => (
                 <button
                   key={ws.id}
-                  onClick={() => { setActiveWorkspaceId(ws.id); setShowHiddenPicker(false); }}
-                  className="px-3.5 py-1.5 text-[13px] font-semibold rounded-full border border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent-light)] transition-colors"
+                  onClick={() => goToWorkspace(ws.id)}
+                  style={{ borderColor: ws.color, color: ws.color }}
+                  className="px-3.5 py-1.5 text-[13px] font-semibold rounded-full border hover:bg-[var(--color-accent-light)] transition-colors"
                 >
-                  👻 {ws.name}
+                  👻 {ws.icon} {ws.name}
                 </button>
               ))
             )}
           </div>
         )}
 
+        {/* ---------- current view heading ---------- */}
+        <p className="text-xs font-semibold uppercase tracking-wide text-[var(--color-ink-muted)] mb-2 mt-1">
+          {viewTitle}
+        </p>
+
         {/* ---------- todo list ---------- */}
-        <div className="flex flex-col gap-2.5 mt-3">
+        <div className="flex flex-col gap-2.5">
           {visibleTodos.length === 0 ? (
             <p className="text-center text-[var(--color-ink-muted)] text-sm py-2.5">
-              {searchQuery ? "No todos match your search." : 'No tasks here yet.'}
+              {searchQuery
+                ? "No todos match your search."
+                : viewMode === "done"
+                ? "No completed tasks yet."
+                : "No tasks here yet."}
             </p>
           ) : (
             visibleTodos.map((todo) => {
               const isCountdown = todo.type === "countdown" && todo.date && todo.time;
               const target = isCountdown ? combineDateAndTime(todo.date, todo.time) : null;
+              // project color is used for the project's own name/badge only —
+              // task cards, the complete circle, and the countdown border
+              // always use the app's default orange accent
+              const workspaceColor = todo.workspaceId ? getWorkspace(todo.workspaceId)?.color : null;
+              const showWorkspaceBadge =
+                (activeWorkspaceId === "all" || viewMode === "done") && todo.workspaceId;
 
               return (
                 <div
@@ -575,13 +751,10 @@ export default function TodoApp() {
 
                     {todo.text}
 
-                    {/* date + tag (+ workspace badge) live in one flex-wrap
-                        row, set as its own line below the text ("block").
-                        Inside that row, flex-wrap lets date and tag sit
-                        side by side whenever there's room — the tag only
-                        drops to a second line if it doesn't fit next to
-                        the date, instead of always being forced down. */}
-                    {(todo.date || todo.tag || (activeWorkspaceId === "all" && todo.workspaceId)) && (
+                    {/* date + tag (+ workspace badge) share one flex-wrap
+                        row below the text; date and tag sit side by side
+                        when there's room, wrapping only when there isn't */}
+                    {(todo.date || todo.tag || showWorkspaceBadge) && (
                       <span className="flex flex-wrap items-center gap-2 mt-1">
                         {todo.date && (
                           <span className="text-xs text-[var(--color-ink-muted)]">
@@ -596,10 +769,15 @@ export default function TodoApp() {
                           </span>
                         )}
 
-                        {/* only shown in "All", so you can tell which project a task belongs to */}
-                        {activeWorkspaceId === "all" && todo.workspaceId && (
-                          <span className="inline-block text-xs px-2 py-0.5 rounded-full border border-[var(--color-border)] text-[var(--color-ink-muted)]">
-                            {getWorkspaceName(todo.workspaceId)}
+                        {/* this badge names the project, so it's the one
+                            place on a task card that still carries the
+                            project's chosen color */}
+                        {showWorkspaceBadge && (
+                          <span
+                            style={{ borderColor: workspaceColor, color: workspaceColor }}
+                            className="inline-block text-xs px-2 py-0.5 rounded-full border"
+                          >
+                            {getWorkspace(todo.workspaceId)?.icon} {getWorkspace(todo.workspaceId)?.name}
                           </span>
                         )}
                       </span>
@@ -632,6 +810,114 @@ export default function TodoApp() {
           )}
         </div>
       </div>
+
+      {/* ---------- ☰ sidebar ---------- */}
+      {showSidebar && (
+        <div className="fixed inset-0 z-40 bg-black/60" onClick={closeSidebar}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="fixed left-0 top-0 h-full w-72 max-w-[80vw] bg-[var(--color-surface)] border-r border-[var(--color-border)] p-5 flex flex-col gap-1 overflow-y-auto shadow-[0_0_30px_rgba(0,0,0,0.6)]"
+          >
+            <button
+              onClick={openDashboard}
+              className="text-left px-3 py-2.5 rounded-lg text-[15px] font-semibold text-[var(--color-ink)] hover:bg-[var(--color-accent-light)] transition-colors"
+            >
+              📊 Dashboard
+            </button>
+
+            <div className="h-px bg-[var(--color-border)] my-2" />
+
+            <button
+              onClick={() => setProjectsExpanded((prev) => !prev)}
+              className="flex items-center justify-between px-3 py-2.5 rounded-lg text-[15px] font-bold text-[var(--color-ink)] hover:bg-[var(--color-accent-light)] transition-colors"
+            >
+              <span>📁 Projects</span>
+              <span className={`text-xs transition-transform ${projectsExpanded ? "rotate-90" : ""}`}>▶</span>
+            </button>
+
+            {projectsExpanded && (
+              <div className="flex flex-col gap-1 pl-2 mb-1">
+                {visibleWorkspaceTabs.length === 0 ? (
+                  <p className="text-xs text-[var(--color-ink-muted)] px-3 py-1">No projects yet.</p>
+                ) : (
+                  visibleWorkspaceTabs.map((ws, index) => {
+                    const pct = getWorkspaceCompletion(ws.id);
+                    return (
+                      <button
+                        key={ws.id}
+                        onClick={() => goToWorkspace(ws.id)}
+                        style={{ animationDelay: `${index * 80}ms`, color: ws.color }}
+                        className="workspace-fade-in flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-semibold hover:bg-[var(--color-accent-light)] transition-colors"
+                      >
+                        <span className="truncate">
+                          {ws.icon} {ws.name}
+                        </span>
+                        <span className="text-xs text-[var(--color-ink-muted)] shrink-0">
+                          {pct === null ? "—" : `${pct}%`}
+                        </span>
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            )}
+
+            <div className="h-px bg-[var(--color-border)] my-2" />
+
+            <button
+              onClick={goToAllTasks}
+              className={`text-left px-3 py-2.5 rounded-lg text-[15px] font-semibold hover:bg-[var(--color-accent-light)] transition-colors ${
+                viewMode === "tasks" && activeWorkspaceId === "all"
+                  ? "text-[var(--color-accent)]"
+                  : "text-[var(--color-ink)]"
+              }`}
+            >
+              🗂 All tasks
+            </button>
+
+            <button
+              onClick={goToDone}
+              className={`text-left px-3 py-2.5 rounded-lg text-[15px] font-semibold hover:bg-[var(--color-accent-light)] transition-colors ${
+                viewMode === "done" ? "text-[var(--color-accent)]" : "text-[var(--color-ink)]"
+              }`}
+            >
+              ✅ Done
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ---------- Dashboard modal ---------- */}
+      {showDashboardModal && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 flex justify-center items-center px-4"
+          onClick={() => setShowDashboardModal(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full max-w-[480px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 shadow-[0_12px_30px_rgba(0,0,0,0.6)]"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-[var(--font-display)] text-xl text-[var(--color-ink)] m-0">Dashboard</h2>
+              <button
+                onClick={() => setShowDashboardModal(false)}
+                className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <StatCard label="Total tasks" value={totalTasksCount} />
+              <StatCard label="Completed" value={completedTasksCount} />
+              <StatCard label="Completion" value={`${completionRate}%`} />
+              <StatCard label="Projects" value={totalProjectsCount} />
+              <StatCard label="Countdowns" value={activeCountdownsCount} />
+              <StatCard label="Due today" value={dueTodayCount} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ---------- "+ New Task" modal ---------- */}
       {showAddModal && (
@@ -709,101 +995,134 @@ export default function TodoApp() {
 
       {/* ---------- "+ Project" modal ---------- */}
       {showProjectModal && (
-        <div className="fixed inset-0 z-40 bg-black/60 flex justify-center items-center px-4">
-          <div className="w-full max-w-[420px] max-h-[85vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
-            <h2 className="font-[var(--font-display)] text-lg text-[var(--color-ink)] m-0">New workspace</h2>
+        <div className="fixed inset-0 z-40 bg-black/60 flex justify-center items-center px-4 py-8">
+          <div className="w-full max-w-[560px] max-h-[90vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-6 sm:p-8 flex flex-col gap-4 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
+            <h2 className="font-[var(--font-display)] text-xl text-[var(--color-ink)] m-0">New workspace</h2>
 
-            <div className="flex items-center gap-2.5">
-              <input
-                type="text"
-                value={draftWorkspaceName}
-                onChange={(e) => setDraftWorkspaceName(e.target.value)}
-                placeholder="Workspace name (e.g. React)"
-                disabled={draftWorkspaceId !== null}
-                className="flex-1 min-w-0 px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors disabled:opacity-60"
-              />
-              <button
-                onClick={toggleDraftWorkspaceHidden}
-                aria-label="Toggle hidden workspace"
-                title="Hidden workspaces only appear under 👻 Hidden"
-                className={`shrink-0 w-9 h-9 rounded-full border-2 flex items-center justify-center transition-colors ${
-                  draftWorkspaceHidden
-                    ? "bg-[var(--color-accent)] border-[var(--color-accent)]"
-                    : "border-[var(--color-ink-muted)]"
-                }`}
-              >
-                👻
-              </button>
-            </div>
-            <p className="text-xs text-[var(--color-ink-muted)] -mt-2 m-0">
-              {draftWorkspaceHidden ? "Hidden — only visible via the 👻 Hidden tab." : "Visible in the tab row and in All."}
-            </p>
+            <div>
+              <p className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-2">
+                Workspace details
+              </p>
 
-            <div className="h-px bg-[var(--color-border)] my-1" />
+              <div className="flex items-center gap-2.5 mb-2">
+                <input
+                  type="text"
+                  value={draftWorkspaceName}
+                  onChange={(e) => setDraftWorkspaceName(e.target.value)}
+                  placeholder="Name (e.g. Company)"
+                  disabled={draftWorkspaceId !== null}
+                  className="flex-1 min-w-0 px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors disabled:opacity-60"
+                />
+                <button
+                  onClick={() => updateDraftWorkspaceMeta({ hidden: !draftWorkspaceHidden })}
+                  aria-label="Toggle hidden workspace"
+                  title="Hidden workspaces only appear under 👻 Hidden"
+                  className={`shrink-0 w-11 h-11 rounded-full border-2 flex items-center justify-center text-lg transition-colors ${
+                    draftWorkspaceHidden ? "bg-[var(--color-accent)] border-[var(--color-accent)]" : "border-[var(--color-ink-muted)]"
+                  }`}
+                >
+                  👻
+                </button>
+              </div>
+              <p className="text-xs text-[var(--color-ink-muted)] m-0 mb-3">
+                {draftWorkspaceHidden ? "Hidden — only visible via the 👻 Hidden tab." : "Visible in the tab row and in All."}
+              </p>
 
-            <p className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide m-0">
-              Add tasks to this workspace
-            </p>
-
-            <input
-              type="text"
-              value={pText}
-              onChange={(e) => setPText(e.target.value)}
-              placeholder="What needs to get done?"
-              className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
-            />
-            <input
-              type="date"
-              value={pDate}
-              min={getTodayString()}
-              onChange={(e) => setPDate(e.target.value)}
-              className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
-            />
-            <input
-              type="text"
-              value={pTag}
-              onChange={(e) => setPTag(e.target.value)}
-              placeholder="#tag (optional)"
-              className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
-            />
-
-            <div className="flex rounded-lg border-2 border-[var(--color-border)] overflow-hidden">
-              <button
-                onClick={() => setPType("standard")}
-                className={`flex-1 py-2 text-sm font-semibold transition-colors ${
-                  pType === "standard" ? "bg-[var(--color-accent)] text-black" : "bg-transparent text-[var(--color-ink-muted)]"
-                }`}
-              >
-                Standard
-              </button>
-              <button
-                onClick={() => setPType("countdown")}
-                className={`flex-1 py-2 text-sm font-semibold transition-colors ${
-                  pType === "countdown" ? "bg-[var(--color-accent)] text-black" : "bg-transparent text-[var(--color-ink-muted)]"
-                }`}
-              >
-                Countdown
-              </button>
+              <div className="flex items-center gap-2.5">
+                <input
+                  type="text"
+                  value={draftWorkspaceIcon}
+                  onChange={(e) => updateDraftWorkspaceMeta({ icon: e.target.value.slice(0, 6) })}
+                  maxLength={6}
+                  placeholder="💼"
+                  className="w-20 px-3 py-2.5 text-[15px] text-center rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                />
+                <ColorSwatchRow
+                  selectedColor={draftWorkspaceColor}
+                  onSelect={(color) => updateDraftWorkspaceMeta({ color })}
+                />
+              </div>
+              <p className="text-xs text-[var(--color-ink-muted)] mt-2 m-0">
+                Icon (up to 6 characters) and color tint this project's name everywhere it appears.
+              </p>
             </div>
 
-            {pType === "countdown" && (
-              <input
-                type="time"
-                value={pTime}
-                onChange={(e) => setPTime(e.target.value)}
-                className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
-              />
-            )}
+            <div className="h-px bg-[var(--color-border)]" />
 
-            <button
-              onClick={handleAddTaskToProject}
-              className="px-4 py-2.5 text-[15px] font-semibold rounded-lg bg-transparent border-2 border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent-light)] transition-colors"
-            >
-              + Add task
-            </button>
+            <div>
+              <p className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mb-2">
+                Add a task to this workspace
+              </p>
+
+              <div className="flex flex-col gap-2.5">
+                <input
+                  type="text"
+                  value={pText}
+                  onChange={(e) => setPText(e.target.value)}
+                  placeholder="What needs to get done?"
+                  className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                />
+                <input
+                  type="date"
+                  value={pDate}
+                  min={getTodayString()}
+                  onChange={(e) => setPDate(e.target.value)}
+                  className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                />
+                <input
+                  type="text"
+                  value={pTag}
+                  onChange={(e) => setPTag(e.target.value)}
+                  placeholder="#tag (optional)"
+                  className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                />
+
+                {/* FIX: this segmented control had no label above it and
+                    used small (text-sm, py-2) buttons, so it read as an
+                    unlabeled, easy-to-miss row. It now has its own
+                    heading and larger, bolder buttons. */}
+                <p className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mt-1 mb-0">
+                  Task type
+                </p>
+                <div className="flex rounded-lg border-2 border-[var(--color-border)] overflow-hidden">
+                  <button
+                    onClick={() => setPType("standard")}
+                    className={`flex-1 py-3 text-[15px] font-bold transition-colors ${
+                      pType === "standard" ? "bg-[var(--color-accent)] text-black" : "bg-transparent text-[var(--color-ink-muted)]"
+                    }`}
+                  >
+                    Standard
+                  </button>
+                  <button
+                    onClick={() => setPType("countdown")}
+                    className={`flex-1 py-3 text-[15px] font-bold transition-colors ${
+                      pType === "countdown" ? "bg-[var(--color-accent)] text-black" : "bg-transparent text-[var(--color-ink-muted)]"
+                    }`}
+                  >
+                    Countdown
+                  </button>
+                </div>
+
+                {pType === "countdown" && (
+                  <input
+                    type="time"
+                    value={pTime}
+                    onChange={(e) => setPTime(e.target.value)}
+                    className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                  />
+                )}
+
+                <button
+                  onClick={handleAddTaskToProject}
+                  className="px-4 py-2.5 text-[15px] font-semibold rounded-lg bg-transparent border-2 border-[var(--color-accent)] text-[var(--color-accent)] hover:bg-[var(--color-accent-light)] transition-colors"
+                >
+                  + Add task
+                </button>
+              </div>
+            </div>
 
             {draftWorkspaceId !== null && (
-              <div className="flex flex-col gap-1.5 mt-1">
+              <div className="flex flex-col gap-1.5">
                 <p className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide m-0">
                   Added ({todos.filter((t) => t.workspaceId === draftWorkspaceId).length})
                 </p>
@@ -827,16 +1146,9 @@ export default function TodoApp() {
         </div>
       )}
 
-      {/* ---------- edit modal ----------
-          BUG FIX: this needs a HIGHER z-index than every other modal.
-          It can be opened either from the home screen list, or from
-          inside the settings modal (which is already open at that
-          point). Without an explicit z-index, whichever modal appears
-          later in the JSX simply painted on top by default — so the
-          edit modal was technically open, just invisible underneath
-          the settings modal. z-50 guarantees it always renders on top,
-          and the settings modal stays open behind it, exactly where
-          you left it, once you close or apply the edit. */}
+      {/* ---------- edit modal (highest z-index: can open from the
+          home list OR from inside the settings modal, and must always
+          render on top of whatever else is open) ---------- */}
       {editingId !== null && (
         <div className="fixed inset-0 z-50 bg-black/60 flex justify-center items-center px-4">
           <div className="w-full max-w-[360px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
@@ -903,11 +1215,15 @@ export default function TodoApp() {
               workspaces.map((ws) => {
                 const wsTasks = todos.filter((t) => t.workspaceId === ws.id);
                 return (
-                  <div
-                    key={ws.id}
-                    className="border border-[var(--color-border)] rounded-lg p-3.5 flex flex-col gap-2.5"
-                  >
+                  <div key={ws.id} className="border border-[var(--color-border)] rounded-lg p-3.5 flex flex-col gap-2.5">
                     <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={ws.icon}
+                        onChange={(e) => setWorkspaceIcon(ws.id, e.target.value)}
+                        maxLength={6}
+                        className="w-14 px-2 py-1.5 text-sm text-center rounded-md bg-transparent border border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                      />
                       <input
                         type="text"
                         value={ws.name}
@@ -918,9 +1234,7 @@ export default function TodoApp() {
                         onClick={() => toggleWorkspaceHidden(ws.id)}
                         title="Toggle hidden"
                         className={`shrink-0 w-8 h-8 rounded-full border-2 flex items-center justify-center transition-colors ${
-                          ws.hidden
-                            ? "bg-[var(--color-accent)] border-[var(--color-accent)]"
-                            : "border-[var(--color-ink-muted)]"
+                          ws.hidden ? "bg-[var(--color-accent)] border-[var(--color-accent)]" : "border-[var(--color-ink-muted)]"
                         }`}
                       >
                         👻
@@ -933,15 +1247,14 @@ export default function TodoApp() {
                       </button>
                     </div>
 
+                    <ColorSwatchRow selectedColor={ws.color} onSelect={(color) => setWorkspaceColor(ws.id, color)} />
+
                     {wsTasks.length === 0 ? (
                       <p className="text-xs text-[var(--color-ink-muted)] m-0">No tasks in this workspace.</p>
                     ) : (
                       <div className="flex flex-col gap-1.5">
                         {wsTasks.map((t) => (
-                          <div
-                            key={t.id}
-                            className="flex items-center justify-between gap-2 text-sm text-[var(--color-ink)]"
-                          >
+                          <div key={t.id} className="flex items-center justify-between gap-2 text-sm text-[var(--color-ink)]">
                             <span className={`truncate ${t.completed ? "line-through text-[var(--color-ink-muted)]" : ""}`}>
                               {t.text}
                             </span>

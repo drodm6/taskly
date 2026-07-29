@@ -75,3 +75,35 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   background: #f97316;
   color: #0a0a0a;
 }
+
+/* ---------- staggered fade-in for the sidebar's project list ----------
+   Used with an inline `animationDelay` per item (see ProjectsMenu in
+   TodoApp.jsx) so each project appears slightly after the one above it,
+   instead of all popping in at once. */
+@keyframes workspaceFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.workspace-fade-in {
+  opacity: 0; /* stays invisible until its delayed animation starts */
+  animation: workspaceFadeIn 0.3s ease forwards;
+}
+
+/* used by the hamburger drawer's Projects list — each project fades
+   and slides up in turn, offset by an animation-delay set per item */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
