@@ -83,7 +83,7 @@ function LabeledDateTimeField({ label, type, value, onChange, min, icon, placeho
           value={value}
           min={min}
           onChange={onChange}
-          className="w-full px-3 py-2.5 pr-10 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+          className="w-full px-3 py-2.5 pr-12 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
         />
 
         {/* our own placeholder — only shown while the field is empty,
@@ -95,8 +95,10 @@ function LabeledDateTimeField({ label, type, value, onChange, min, icon, placeho
         )}
 
         {/* our own icon — always visible, regardless of whether this
-            browser draws its own */}
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[16px] pointer-events-none">
+            browser draws its own. Nudged in from the edge (right-4
+            instead of right-3) so it doesn't sit flush against the
+            field's border. */}
+        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[16px] pointer-events-none">
           {icon}
         </span>
       </div>
