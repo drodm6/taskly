@@ -57,21 +57,18 @@ function ColorSwatchRow({ selectedColor, onSelect }) {
 }
 
 // a date or time input with its own always-visible label above it,
-// PLUS a custom icon and placeholder drawn by us, overlaid on top of
-// the (invisible-on-some-browsers) native input.
+// plus a custom placeholder shown while it's empty.
 //
-// FIX: some mobile browsers/webviews draw literally nothing inside an
-// empty date/time input — no calendar icon, no "dd/mm/yyyy" dashes —
-// until the person taps it. The field then just looks like a blank,
-// broken box. Since we can't control that native rendering, we stop
-// relying on it: this component draws its own icon (always visible)
-// and its own placeholder text (visible only while the field is
-// still empty) directly on top of the real input. Tapping anywhere on
-// the field still opens the browser's native date/time picker — the
-// underlying <input> is unchanged, just visually transparent, with
-// our overlay sitting above it via `pointer-events-none` so it never
-// blocks the tap.
-function LabeledDateTimeField({ label, type, value, onChange, min, icon, placeholder }) {
+// FIX: native date/time inputs mostly ignore the `placeholder`
+// attribute, and some mobile browsers draw nothing at all inside an
+// empty one — no "dd/mm/yyyy" dashes, nothing. So instead of relying
+// on the browser to show any placeholder text, this component draws
+// its own on top of the real input, only while it's empty. The
+// underlying <input> is unchanged — tapping anywhere on the field
+// still opens the browser's native date/time picker; our placeholder
+// just sits above it via `pointer-events-none` so it never blocks
+// that tap, and disappears the moment a real value is chosen.
+function LabeledDateTimeField({ label, type, value, onChange, min, placeholder }) {
   return (
     <div className="flex flex-col gap-1">
       <label className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide">
@@ -83,24 +80,14 @@ function LabeledDateTimeField({ label, type, value, onChange, min, icon, placeho
           value={value}
           min={min}
           onChange={onChange}
-          className="w-full px-3 py-2.5 pr-12 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+          className="w-full px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
         />
 
-        {/* our own placeholder — only shown while the field is empty,
-            so it never overlaps a real chosen date/time */}
         {!value && (
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-[var(--color-ink-muted)] pointer-events-none">
             {placeholder}
           </span>
         )}
-
-        {/* our own icon — always visible, regardless of whether this
-            browser draws its own. Nudged in from the edge (right-4
-            instead of right-3) so it doesn't sit flush against the
-            field's border. */}
-        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[16px] pointer-events-none">
-          {icon}
-        </span>
       </div>
     </div>
   );
@@ -988,7 +975,6 @@ export default function TodoApp() {
               value={newDate}
               min={getTodayString()}
               onChange={(e) => setNewDate(e.target.value)}
-              icon="📅"
               placeholder="Select date"
             />
             <input
@@ -1024,7 +1010,6 @@ export default function TodoApp() {
                 type="time"
                 value={newTime}
                 onChange={(e) => setNewTime(e.target.value)}
-                icon="🕐"
                 placeholder="Select time"
               />
             )}
@@ -1122,7 +1107,6 @@ export default function TodoApp() {
                   value={pDate}
                   min={getTodayString()}
                   onChange={(e) => setPDate(e.target.value)}
-                  icon="📅"
                   placeholder="Select date"
                 />
                 <input
@@ -1165,7 +1149,6 @@ export default function TodoApp() {
                     type="time"
                     value={pTime}
                     onChange={(e) => setPTime(e.target.value)}
-                    icon="🕐"
                     placeholder="Select time"
                   />
                 )}
@@ -1224,7 +1207,6 @@ export default function TodoApp() {
               value={editDate}
               min={getTodayString()}
               onChange={(e) => setEditDate(e.target.value)}
-              icon="📅"
               placeholder="Select date"
             />
             <input
