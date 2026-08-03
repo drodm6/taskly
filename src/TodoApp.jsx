@@ -57,17 +57,23 @@ function ColorSwatchRow({ selectedColor, onSelect }) {
 }
 
 // a date or time input with its own always-visible label above it,
-// plus a custom placeholder shown while it's empty.
+// plus a custom placeholder shown while it's empty — but ONLY on
+// small (mobile) screens.
 //
-// FIX: native date/time inputs mostly ignore the `placeholder`
-// attribute, and some mobile browsers draw nothing at all inside an
-// empty one — no "dd/mm/yyyy" dashes, nothing. So instead of relying
-// on the browser to show any placeholder text, this component draws
-// its own on top of the real input, only while it's empty. The
-// underlying <input> is unchanged — tapping anywhere on the field
-// still opens the browser's native date/time picker; our placeholder
-// just sits above it via `pointer-events-none` so it never blocks
-// that tap, and disappears the moment a real value is chosen.
+// FIX: mobile browsers often draw nothing inside an empty date/time
+// input — no "dd/mm/yyyy" dashes, nothing — so our own placeholder
+// fills that gap there. Desktop/laptop browsers do the opposite:
+// Chrome, Firefox, etc. already render their own native placeholder
+// ("dd/mm/yyyy", "--:--") for an empty date/time input. Showing ours
+// on top of that native one was the "messy" double-placeholder look.
+// The `sm:hidden` class below is the fix: our placeholder shows by
+// default (mobile widths), then disappears entirely at the `sm`
+// breakpoint (640px) and up, letting the browser's own native
+// placeholder show through unobstructed on larger screens. This is a
+// pure CSS breakpoint, not real device detection — but screen width
+// is the right signal here, since it's screen space (not device
+// type) that decides whether there's room for the browser's own
+// placeholder to render legibly.
 function LabeledDateTimeField({ label, type, value, onChange, min, placeholder }) {
   return (
     <div className="flex flex-col gap-1">
@@ -84,7 +90,7 @@ function LabeledDateTimeField({ label, type, value, onChange, min, placeholder }
         />
 
         {!value && (
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-[var(--color-ink-muted)] pointer-events-none">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] text-[var(--color-ink-muted)] pointer-events-none sm:hidden">
             {placeholder}
           </span>
         )}
@@ -1082,7 +1088,7 @@ export default function TodoApp() {
                 />
               </div>
               <p className="text-xs text-[var(--color-ink-muted)] mt-2 m-0">
-                Icon (up to 6 characters) and color tint this project's name everywhere it appears.
+                Icon or emojy (up to 6 characters) and color tint this project's name everywhere it appears.
               </p>
             </div>
 
