@@ -10,19 +10,19 @@ Taskly started as a plain HTML/CSS/JS button with a click handler. It ended up a
 
 ### Creating, editing, and organizing tasks
 <p float="left">
-  <img src="./screenshots/tasks-1.png" width="45%" alt="Taskly home screen showing the task list, search bar, and workspace tabs" />
+  <img src="./screenshots/tasks-1.png.jpg" width="45%" alt="Taskly home screen showing the task list, search bar, and workspace tabs" />
   <img src="./screenshots/tasks-2.png.jpg" width="45%" alt="Taskly task creation and editing modal, including project assignment and marking a task done" />
 </p>
 
 The core loop of the app, in two screens: adding a task through the **"+ New Task"** modal (with an optional date, tag, and Standard/Countdown type), editing an existing one, assigning it to a **workspace**, and tapping the small circle to mark it complete — which strikes the text through and dims it rather than deleting it outright. This is also where the color-coded project tabs and search bar live, letting you jump between "All," a specific project, or filter by typing.
 
 ### ☰ Navigation drawer
-<img src="./screenshots/hamburger-menu.png" width="45%" alt="Taskly's slide-out hamburger menu showing Dashboard, Projects, All tasks, and Done" />
+<img src="./screenshots/hamburger-menu.png.jpg" width="45%" alt="Taskly's slide-out hamburger menu showing Dashboard, Projects, All tasks, and Done" />
 
 Tapping the orange ☰ button in the top-left opens the app's navigation drawer: **Dashboard** (jumps to the stats overview below), **Projects** (expands into an animated, one-by-one list of every workspace with its own completion percentage), **All tasks**, and **Done** — a dedicated view collecting every completed task across every project in one place.
 
 ### 📊 Dashboard
-<img src="./screenshots/dashboard.png" width="45%" alt="Taskly dashboard showing total tasks, completed tasks, completion rate, project count, active countdowns, and tasks due today" />
+<img src="./screenshots/dashboard.png.jpg" width="45%" alt="Taskly dashboard showing total tasks, completed tasks, completion rate, project count, active countdowns, and tasks due today" />
 
 A live snapshot of everything happening across the app: total tasks, how many are completed, your overall completion rate, how many active projects you're running, how many countdown tasks are still ticking, and what's due today. Nothing here is stored separately — every number is calculated fresh from your actual task list each time you open it, so it's never stale.
 
