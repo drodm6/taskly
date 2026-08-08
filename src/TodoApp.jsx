@@ -1,8 +1,6 @@
 import { useState, useEffect } from "react";
 
-// =========================================================
-// STATIC DATA
-// =========================================================
+
 
 // fixed palette — keeps every project readable on the dark background
 const WORKSPACE_COLORS = [
@@ -16,9 +14,7 @@ const WORKSPACE_COLORS = [
   { name: "Teal", value: "#14b8a6" },
 ];
 
-// =========================================================
-// SMALL PRESENTATIONAL HELPERS
-// =========================================================
+
 
 // one number + label tile, used in the Dashboard modal
 function StatCard({ label, value }) {
@@ -77,9 +73,7 @@ function LabeledDateTimeField({ label, type, value, onChange, min, placeholder }
   );
 }
 
-// =========================================================
-// TodoApp
-// =========================================================
+
 export default function TodoApp() {
   // =======================================================
   // STATE

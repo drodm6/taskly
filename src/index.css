@@ -29,10 +29,7 @@
   src: url('https://static.figma.com/font/Fraunces_SOFT_WONK_opsz_wght__1') format('woff2');
 }
 
-/* Mobile browsers give date/time inputs a native appearance with its own
-   intrinsic width, which ignores Tailwind's w-full and makes these boxes
-   wider than the plain text inputs next to them. Stripping the native
-   appearance lets them size like any other input. */
+
 input[type="date"],
 input[type="time"] {
   -webkit-appearance: none;
@@ -90,10 +87,7 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   color: #0a0a0a;
 }
 
-/* ---------- staggered fade-in for the sidebar's project list ----------
-   Used with an inline `animationDelay` per item (see ProjectsMenu in
-   TodoApp.jsx) so each project appears slightly after the one above it,
-   instead of all popping in at once. */
+
 @keyframes workspaceFadeIn {
   from {
     opacity: 0;
@@ -109,8 +103,6 @@ input[type="time"]::-webkit-calendar-picker-indicator {
   animation: workspaceFadeIn 0.3s ease forwards;
 }
 
-/* used by the hamburger drawer's Projects list — each project fades
-   and slides up in turn, offset by an animation-delay set per item */
 @keyframes fadeInUp {
   from {
     opacity: 0;
