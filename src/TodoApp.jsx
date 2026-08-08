@@ -1,13 +1,10 @@
 import { useState, useEffect } from "react";
 
 // =========================================================
-// STATIC DATA (lives outside the component — never changes,
-// doesn't depend on props or state)
+// STATIC DATA
 // =========================================================
 
-// preset color palette for workspaces. A fixed palette (rather than a
-// free-form color picker) keeps every project looking intentional and
-// guarantees good contrast with the black background + white text.
+// fixed palette — keeps every project readable on the dark background
 const WORKSPACE_COLORS = [
   { name: "Orange", value: "#f97316" },
   { name: "Blue", value: "#3b82f6" },
@@ -21,8 +18,6 @@ const WORKSPACE_COLORS = [
 
 // =========================================================
 // SMALL PRESENTATIONAL HELPERS
-// (plain functions returning JSX — not connected to state,
-// just used to avoid repeating the same markup twice)
 // =========================================================
 
 // one number + label tile, used in the Dashboard modal
@@ -35,8 +30,7 @@ function StatCard({ label, value }) {
   );
 }
 
-// row of clickable color circles, used in both the "+ Project" modal
-// and the settings modal's per-workspace editor
+// row of clickable color circles
 function ColorSwatchRow({ selectedColor, onSelect }) {
   return (
     <div className="flex-1 flex flex-wrap gap-2">
@@ -56,37 +50,21 @@ function ColorSwatchRow({ selectedColor, onSelect }) {
   );
 }
 
-// a date or time input with its own always-visible label above it,
-// plus a custom placeholder shown while it's empty — but ONLY on
-// small (mobile) screens.
-//
-// FIX: mobile browsers often draw nothing inside an empty date/time
-// input — no "dd/mm/yyyy" dashes, nothing — so our own placeholder
-// fills that gap there. Desktop/laptop browsers do the opposite:
-// Chrome, Firefox, etc. already render their own native placeholder
-// ("dd/mm/yyyy", "--:--") for an empty date/time input. Showing ours
-// on top of that native one was the "messy" double-placeholder look.
-// The `sm:hidden` class below is the fix: our placeholder shows by
-// default (mobile widths), then disappears entirely at the `sm`
-// breakpoint (640px) and up, letting the browser's own native
-// placeholder show through unobstructed on larger screens. This is a
-// pure CSS breakpoint, not real device detection — but screen width
-// is the right signal here, since it's screen space (not device
-// type) that decides whether there's room for the browser's own
-// placeholder to render legibly.
+// date/time input with a label above it. The custom placeholder only
+// shows on mobile (sm:hidden) — desktop browsers draw their own.
 function LabeledDateTimeField({ label, type, value, onChange, min, placeholder }) {
   return (
-    <div className="flex flex-col gap-1">
+    <div className="flex flex-col gap-1 w-full min-w-0">
       <label className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide">
         {label}
       </label>
-      <div className="relative">
+      <div className="relative w-full min-w-0">
         <input
           type={type}
           value={value}
           min={min}
           onChange={onChange}
-          className="w-full px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+          className="w-full min-w-0 h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
         />
 
         {!value && (
@@ -107,20 +85,16 @@ export default function TodoApp() {
   // STATE
   // =======================================================
 
-  // each todo is an object:
-  // { id, text, date, tag, completed, type, time, workspaceId }
+  // todo: { id, text, date, tag, completed, type, time, workspaceId }
   const [todos, setTodos] = useState([]);
 
-  // each workspace ("project") is an object:
-  // { id, name, icon, color, hidden }
+  // workspace: { id, name, icon, color, hidden }
   const [workspaces, setWorkspaces] = useState([]);
 
-  // which workspace tab is selected: "all" or a workspace id
+  // "all" or a workspace id
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("all");
 
-  // "tasks" = normal view, filtered by activeWorkspaceId above
-  // "done"  = a dedicated view showing every completed task across
-  //           every non-hidden workspace, ignoring activeWorkspaceId
+  // "tasks" = filtered by activeWorkspaceId | "done" = all completed tasks
   const [viewMode, setViewMode] = useState("tasks");
 
   const [showHiddenPicker, setShowHiddenPicker] = useState(false);
@@ -131,15 +105,14 @@ export default function TodoApp() {
   const [projectsExpanded, setProjectsExpanded] = useState(false);
   const [showDashboardModal, setShowDashboardModal] = useState(false);
 
-  // a ticking clock — updates every second so countdown badges and
-  // the "active countdowns" dashboard stat stay live
+  // ticking clock — keeps countdown badges live
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const intervalId = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(intervalId);
   }, []);
 
-  // ---- "+ New Task" modal (home-screen quick add) ----
+  // ---- "+ New Task" modal ----
   const [showAddModal, setShowAddModal] = useState(false);
   const [newText, setNewText] = useState("");
   const [newDate, setNewDate] = useState("");
@@ -147,22 +120,21 @@ export default function TodoApp() {
   const [newType, setNewType] = useState("standard");
   const [newTime, setNewTime] = useState("");
 
-  // ---- "+ Project" modal (create a workspace + tasks inside it) ----
+  // ---- "+ Project" modal ----
   const [showProjectModal, setShowProjectModal] = useState(false);
   const [draftWorkspaceName, setDraftWorkspaceName] = useState("");
   const [draftWorkspaceIcon, setDraftWorkspaceIcon] = useState("");
   const [draftWorkspaceColor, setDraftWorkspaceColor] = useState(WORKSPACE_COLORS[0].value);
   const [draftWorkspaceHidden, setDraftWorkspaceHidden] = useState(false);
-  // becomes a real id the moment the workspace is first actually created
+  // becomes a real id once the workspace is actually created
   const [draftWorkspaceId, setDraftWorkspaceId] = useState(null);
-  // task fields for adding tasks *inside* the project modal
   const [pText, setPText] = useState("");
   const [pDate, setPDate] = useState("");
   const [pTag, setPTag] = useState("");
   const [pType, setPType] = useState("standard");
   const [pTime, setPTime] = useState("");
 
-  // ---- edit modal (shared by the home list and the settings modal) ----
+  // ---- edit modal ----
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const [editDate, setEditDate] = useState("");
@@ -217,18 +189,15 @@ export default function TodoApp() {
     return `${totalMinutes}min left`;
   }
 
-  // looks up a full workspace object by id (name / icon / color / hidden)
   function getWorkspace(workspaceId) {
     return workspaces.find((w) => w.id === workspaceId) || null;
   }
 
-  // ids of every workspace currently marked hidden — used to exclude
-  // their tasks from "All" and from the Dashboard/Done views
   function getHiddenWorkspaceIds() {
     return workspaces.filter((w) => w.hidden).map((w) => w.id);
   }
 
-  // completion percentage for one workspace's tasks (null if it has none)
+  // completion % for one workspace (null if it has no tasks)
   function getWorkspaceCompletion(workspaceId) {
     const wsTasks = todos.filter((t) => t.workspaceId === workspaceId);
     if (wsTasks.length === 0) return null;
@@ -237,7 +206,7 @@ export default function TodoApp() {
   }
 
   // =======================================================
-  // CORE TODO OPERATIONS (add / delete / complete)
+  // CORE TODO OPERATIONS
   // =======================================================
 
   function addTodo(todo) {
@@ -310,17 +279,13 @@ export default function TodoApp() {
   // SEARCH / FILTER / ACTIVE VIEW
   // =======================================================
 
-  // the single function deciding what the home screen shows: applies
-  // the view mode (tasks vs. done) and workspace filter first, then
-  // search on top, then sorts — in that order
+  // filters by view mode + workspace, then search, then sorts
   function getVisibleTodos() {
     let result = todos;
     const hiddenIds = getHiddenWorkspaceIds();
 
     if (viewMode === "done") {
-      // Done view ignores whichever tab is selected — it always shows
-      // every completed task, from every non-hidden workspace or with
-      // no workspace at all
+      // ignores the selected tab — shows every completed task
       result = result.filter((todo) => todo.completed && !hiddenIds.includes(todo.workspaceId));
     } else if (activeWorkspaceId === "all") {
       result = result.filter((todo) => !hiddenIds.includes(todo.workspaceId));
@@ -373,11 +338,11 @@ export default function TodoApp() {
   }
 
   // =======================================================
-  // "+ NEW TASK" MODAL (home-screen quick add)
+  // "+ NEW TASK" MODAL
   // =======================================================
 
   function openAddModal() {
-    setViewMode("tasks"); // adding a task always returns you to the normal task view
+    setViewMode("tasks");
     setShowAddModal(true);
   }
 
@@ -421,7 +386,7 @@ export default function TodoApp() {
   }
 
   // =======================================================
-  // "+ PROJECT" MODAL (create a workspace + tasks inside it)
+  // "+ PROJECT" MODAL
   // =======================================================
 
   function openProjectModal() {
@@ -443,12 +408,8 @@ export default function TodoApp() {
     setPTime("");
   }
 
-  // updates one or more of the draft workspace's meta fields (hidden /
-  // icon / color). BUG-FIX PATTERN: if the workspace has already been
-  // created (because a task was added before this change), the change
-  // must ALSO be written directly onto that existing workspace record —
-  // otherwise it only updates the draft, which nothing reads anymore
-  // once the real workspace object already exists.
+  // updates the draft AND the real workspace record if one already
+  // exists — otherwise changes made after the first task silently do nothing
   function updateDraftWorkspaceMeta(updates) {
     if ("hidden" in updates) setDraftWorkspaceHidden(updates.hidden);
     if ("icon" in updates) setDraftWorkspaceIcon(updates.icon);
@@ -480,8 +441,7 @@ export default function TodoApp() {
       return;
     }
 
-    // create the workspace on the first task add only; every later
-    // click in this session reuses the same draftWorkspaceId
+    // workspace is created on the first add; later adds reuse the same id
     let workspaceId = draftWorkspaceId;
     if (workspaceId === null) {
       workspaceId = Date.now();
@@ -499,7 +459,7 @@ export default function TodoApp() {
     }
 
     addTodo({
-      id: Date.now() + 1, // +1 so it can never collide with the workspace id above
+      id: Date.now() + 1, // +1 avoids colliding with the workspace id above
       text,
       date: pDate,
       tag: normalizeTag(pTag),
@@ -542,7 +502,7 @@ export default function TodoApp() {
   }
 
   // =======================================================
-  // EDIT MODAL OPERATIONS (shared: home list + settings modal)
+  // EDIT MODAL
   // =======================================================
 
   function openEditModal(todo) {
@@ -579,7 +539,7 @@ export default function TodoApp() {
   }
 
   // =======================================================
-  // DERIVED VALUES (recomputed every render — never stored in state)
+  // DERIVED VALUES (recomputed every render)
   // =======================================================
 
   const visibleTodos = getVisibleTodos();
@@ -602,7 +562,6 @@ export default function TodoApp() {
   const todayString = getTodayString();
   const dueTodayCount = dashboardTasks.filter((t) => t.date === todayString && !t.completed).length;
 
-  // what the small heading above the task list should read
   const viewTitle =
     viewMode === "done"
       ? "Done"
@@ -614,15 +573,9 @@ export default function TodoApp() {
   // RENDER
   // =======================================================
   return (
-    // FIX: this used to be a centered flex wrapper holding a separate,
-    // narrower "surface" card — which read as a small floating card on
-    // top of a mostly-empty black page. Now the whole page IS the
-    // surface: one continuous background, no nested box, full width.
     <div className="min-h-screen bg-[var(--color-canvas)] text-[var(--color-ink)]">
 
-      {/* ---------- header bar: hamburger sits in-flow, top-left,
-          instead of a fixed floating button that could overlap
-          content or sit awkwardly on small screens ---------- */}
+      {/* ---------- header bar ---------- */}
       <div className="flex items-center gap-3 px-4 sm:px-8 py-4 border-b border-[var(--color-border)]">
         <button
           onClick={() => setShowSidebar(true)}
@@ -636,8 +589,7 @@ export default function TodoApp() {
         </h1>
       </div>
 
-      {/* ---------- main content — fills the screen on mobile, caps
-          at a comfortable reading width and centers on larger screens ---------- */}
+      {/* ---------- main content ---------- */}
       <div className="max-w-[700px] mx-auto px-4 sm:px-8 py-6">
 
         {/* ---------- search bar ---------- */}
@@ -753,9 +705,7 @@ export default function TodoApp() {
             visibleTodos.map((todo) => {
               const isCountdown = todo.type === "countdown" && todo.date && todo.time;
               const target = isCountdown ? combineDateAndTime(todo.date, todo.time) : null;
-              // project color is used for the project's own name/badge only —
-              // task cards, the complete circle, and the countdown border
-              // always use the app's default orange accent
+              // project color tints its own badge only — cards stay orange
               const workspaceColor = todo.workspaceId ? getWorkspace(todo.workspaceId)?.color : null;
               const showWorkspaceBadge =
                 (activeWorkspaceId === "all" || viewMode === "done") && todo.workspaceId;
@@ -794,9 +744,7 @@ export default function TodoApp() {
 
                     {todo.text}
 
-                    {/* date + tag (+ workspace badge) share one flex-wrap
-                        row below the text; date and tag sit side by side
-                        when there's room, wrapping only when there isn't */}
+                    {/* date + tag + badge share one wrapping row */}
                     {(todo.date || todo.tag || showWorkspaceBadge) && (
                       <span className="flex flex-wrap items-center gap-2 mt-1">
                         {todo.date && (
@@ -812,9 +760,6 @@ export default function TodoApp() {
                           </span>
                         )}
 
-                        {/* this badge names the project, so it's the one
-                            place on a task card that still carries the
-                            project's chosen color */}
                         {showWorkspaceBadge && (
                           <span
                             style={{ borderColor: workspaceColor, color: workspaceColor }}
@@ -973,7 +918,7 @@ export default function TodoApp() {
               value={newText}
               onChange={(e) => setNewText(e.target.value)}
               placeholder="What needs to get done?"
-              className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+              className="h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
             />
             <LabeledDateTimeField
               label="Date"
@@ -988,7 +933,7 @@ export default function TodoApp() {
               value={newTag}
               onChange={(e) => setNewTag(e.target.value)}
               placeholder="#tag (optional)"
-              className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+              className="h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
             />
 
             <div className="flex rounded-lg border-2 border-[var(--color-border)] overflow-hidden">
@@ -1056,7 +1001,7 @@ export default function TodoApp() {
                   onChange={(e) => setDraftWorkspaceName(e.target.value)}
                   placeholder="Name (e.g. Company)"
                   disabled={draftWorkspaceId !== null}
-                  className="flex-1 min-w-0 px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors disabled:opacity-60"
+                  className="flex-1 min-w-0 h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors disabled:opacity-60"
                 />
                 <button
                   onClick={() => updateDraftWorkspaceMeta({ hidden: !draftWorkspaceHidden })}
@@ -1080,7 +1025,7 @@ export default function TodoApp() {
                   onChange={(e) => updateDraftWorkspaceMeta({ icon: e.target.value.slice(0, 6) })}
                   maxLength={6}
                   placeholder="💼"
-                  className="w-20 px-3 py-2.5 text-[15px] text-center rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                  className="w-20 h-11 px-3 text-[15px] text-center rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
                 />
                 <ColorSwatchRow
                   selectedColor={draftWorkspaceColor}
@@ -1105,7 +1050,7 @@ export default function TodoApp() {
                   value={pText}
                   onChange={(e) => setPText(e.target.value)}
                   placeholder="What needs to get done?"
-                  className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                  className="h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
                 />
                 <LabeledDateTimeField
                   label="Date"
@@ -1120,13 +1065,9 @@ export default function TodoApp() {
                   value={pTag}
                   onChange={(e) => setPTag(e.target.value)}
                   placeholder="#tag (optional)"
-                  className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                  className="h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
                 />
 
-                {/* FIX: this segmented control had no label above it and
-                    used small (text-sm, py-2) buttons, so it read as an
-                    unlabeled, easy-to-miss row. It now has its own
-                    heading and larger, bolder buttons. */}
                 <p className="text-xs font-semibold text-[var(--color-ink-muted)] uppercase tracking-wide mt-1 mb-0">
                   Task type
                 </p>
@@ -1193,9 +1134,7 @@ export default function TodoApp() {
         </div>
       )}
 
-      {/* ---------- edit modal (highest z-index: can open from the
-          home list OR from inside the settings modal, and must always
-          render on top of whatever else is open) ---------- */}
+      {/* ---------- edit modal (z-50: must sit above the settings modal) ---------- */}
       {editingId !== null && (
         <div className="fixed inset-0 z-50 bg-black/60 flex justify-center items-center px-4">
           <div className="w-full max-w-[360px] bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">
@@ -1205,7 +1144,7 @@ export default function TodoApp() {
               type="text"
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
-              className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+              className="h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
             />
             <LabeledDateTimeField
               label="Date"
@@ -1220,7 +1159,7 @@ export default function TodoApp() {
               value={editTag}
               onChange={(e) => setEditTag(e.target.value)}
               placeholder="#tag (optional)"
-              className="px-3 py-2.5 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
+              className="h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors"
             />
 
             <div className="flex gap-2.5 mt-1.5">
@@ -1241,7 +1180,7 @@ export default function TodoApp() {
         </div>
       )}
 
-      {/* ---------- settings modal: manage all workspaces ---------- */}
+      {/* ---------- settings modal ---------- */}
       {showSettingsModal && (
         <div className="fixed inset-0 z-40 bg-black/60 flex justify-center items-center px-4">
           <div className="w-full max-w-[440px] max-h-[85vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-4 shadow-[0_12px_30px_rgba(0,0,0,0.6)]">

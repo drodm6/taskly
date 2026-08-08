@@ -29,6 +29,20 @@
   src: url('https://static.figma.com/font/Fraunces_SOFT_WONK_opsz_wght__1') format('woff2');
 }
 
+/* Mobile browsers give date/time inputs a native appearance with its own
+   intrinsic width, which ignores Tailwind's w-full and makes these boxes
+   wider than the plain text inputs next to them. Stripping the native
+   appearance lets them size like any other input. */
+input[type="date"],
+input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 @theme {
   --font-sans: 'Inter', system-ui, sans-serif;
   --font-display: 'Fraunces', Georgia, serif;
