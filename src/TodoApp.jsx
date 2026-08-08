@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 
 
 
-// fixed palette — keeps every project readable on the dark background
+// colors 
 const WORKSPACE_COLORS = [
   { name: "Orange", value: "#f97316" },
   { name: "Blue", value: "#3b82f6" },
@@ -46,8 +46,7 @@ function ColorSwatchRow({ selectedColor, onSelect }) {
   );
 }
 
-// date/time input with a label above it. The custom placeholder only
-// shows on mobile (sm:hidden) — desktop browsers draw their own.
+
 function LabeledDateTimeField({ label, type, value, onChange, min, placeholder }) {
   return (
     <div className="flex flex-col gap-1 w-full min-w-0">
@@ -79,22 +78,19 @@ export default function TodoApp() {
   // STATE
   // =======================================================
 
-  // todo: { id, text, date, tag, completed, type, time, workspaceId }
   const [todos, setTodos] = useState([]);
 
-  // workspace: { id, name, icon, color, hidden }
   const [workspaces, setWorkspaces] = useState([]);
 
   // "all" or a workspace id
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("all");
 
-  // "tasks" = filtered by activeWorkspaceId | "done" = all completed tasks
   const [viewMode, setViewMode] = useState("tasks");
 
   const [showHiddenPicker, setShowHiddenPicker] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
-  // ---- sidebar navigation (☰ menu) ----
+  //  sidebar navigation  menu
   const [showSidebar, setShowSidebar] = useState(false);
   const [projectsExpanded, setProjectsExpanded] = useState(false);
   const [showDashboardModal, setShowDashboardModal] = useState(false);
@@ -532,9 +528,6 @@ export default function TodoApp() {
     closeEditModal();
   }
 
-  // =======================================================
-  // DERIVED VALUES (recomputed every render)
-  // =======================================================
 
   const visibleTodos = getVisibleTodos();
   const visibleWorkspaceTabs = workspaces.filter((ws) => !ws.hidden);
