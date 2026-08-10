@@ -55,3 +55,14 @@ export function formatRemaining(targetDate, now) {
 export function normalizeTag(rawTag) {
   return rawTag.trim().replace(/^#/, "");
 }
+
+// keeps ONLY emoji characters, discarding letters/numbers/symbols.
+// \p{Extended_Pictographic} matches emoji; the trailing group keeps
+// multi-part emoji intact (skin tones, flags, 👨‍💻-style ZWJ sequences)
+// which would otherwise be split into pieces.
+export function filterEmojiOnly(input, maxEmoji = 2) {
+  const matches = input.match(
+    /\p{Extended_Pictographic}(\uFE0F|\u200D\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}])*/gu
+  );
+  return matches ? matches.slice(0, maxEmoji).join("") : "";
+}

@@ -1,49 +1,5 @@
 @import 'tailwindcss';
-
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('https://static.figma.com/font/Inter_1') format('woff2');
-}
-@font-face {
-  font-family: 'Inter';
-  font-style: normal;
-  font-weight: 500;
-  font-display: swap;
-  src: url('https://static.figma.com/font/Inter_1') format('woff2');
-}
-@font-face {
-  font-family: 'Fraunces';
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-  src: url('https://static.figma.com/font/Fraunces_SOFT_WONK_opsz_wght__1') format('woff2');
-}
-@font-face {
-  font-family: 'Fraunces';
-  font-style: normal;
-  font-weight: 600;
-  font-display: swap;
-  src: url('https://static.figma.com/font/Fraunces_SOFT_WONK_opsz_wght__1') format('woff2');
-}
-
-
-input[type="date"],
-input[type="time"] {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 100%;
-  min-width: 0;
-  max-width: 100%;
-  box-sizing: border-box;
-}
-
 @theme {
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-display: 'Fraunces', Georgia, serif;
-
   --color-canvas: #0a0a0a;
   --color-ink: #ffffff;
   --color-ink-muted: #a3a3a3;
@@ -51,65 +7,39 @@ input[type="time"] {
   --color-accent-light: rgba(249, 115, 22, 0.14);
   --color-border: #262626;
   --color-surface: #171717;
-  --color-done: #d1fae5;
-  --color-done-text: #065f46;
 }
-
-* {
-  box-sizing: border-box;
+html, body { background-color: #0a0a0a; color: #ffffff; }
+input[type="date"], input[type="time"] {
+  -webkit-appearance: none; appearance: none;
+  width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;
 }
-
-html, body {
-  background-color: #0a0a0a;
-  color: #ffffff;
-}
-
-::-webkit-scrollbar {
-  width: 4px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: #f97316;
-  border-radius: 2px;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
-  opacity: 0.6;
-  cursor: pointer;
-  filter: invert(1);
-}
-
-::selection {
-  background: #f97316;
-  color: #0a0a0a;
-}
-
-
 @keyframes workspaceFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-.workspace-fade-in {
-  opacity: 0; /* stays invisible until its delayed animation starts */
-  animation: workspaceFadeIn 0.3s ease forwards;
+.workspace-fade-in { opacity: 0; animation: workspaceFadeIn 0.3s ease forwards; }
+
+/* ---------- app-like touch behaviour ----------
+   touch-action: manipulation disables double-tap-to-zoom, which also
+   removes the ~300ms delay browsers add after every tap while they
+   wait to see if a second tap is coming. That delay is what made
+   buttons feel unresponsive. Pinch-to-zoom still works, so this
+   doesn't take accessibility away. */
+button,
+input,
+label,
+a {
+  touch-action: manipulation;
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* removes the grey flash box some mobile browsers paint over a tapped
+   element — a small thing that makes taps read as "web page" */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* stops the whole page rubber-banding past its edges on mobile */
+html,
+body {
+  overscroll-behavior-y: none;
 }

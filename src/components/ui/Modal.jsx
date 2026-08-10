@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 // =========================================================
 // Modal — the shared overlay + panel frame
 //
@@ -15,6 +17,18 @@ export function Modal({
   closeOnBackdrop = false,
   showCloseButton = false,
 }) {
+  // freeze the page behind the modal, so scrolling inside it doesn't
+  // drag the whole app around underneath — the main thing that makes
+  // a web modal feel like a web page instead of an app screen
+  useEffect(() => {
+    if (!open) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [open]);
+
   if (!open) return null;
 
   return (
@@ -24,7 +38,9 @@ export function Modal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className={`w-full ${maxWidth} max-h-[90vh] overflow-y-auto bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.6)]`}
+        // overscroll-contain stops a scroll that reaches the modal's
+        // edge from continuing on into the page behind it
+        className={`w-full ${maxWidth} max-h-[90vh] overflow-y-auto overscroll-contain bg-[var(--color-surface)] border border-[var(--color-border)] rounded-xl p-6 flex flex-col gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.6)]`}
       >
         <div className="flex items-center justify-between">
           <h2 className="font-[var(--font-display)] text-lg text-[var(--color-ink)] m-0">

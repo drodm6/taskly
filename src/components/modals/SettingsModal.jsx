@@ -1,5 +1,5 @@
 import { Modal } from "../ui/Modal";
-import { ColorSwatchRow, GhostToggle } from "../ui";
+import { ColorSwatchRow, GhostToggle, EmojiField } from "../ui";
 
 export function SettingsModal({
   open,
@@ -32,18 +32,16 @@ export function SettingsModal({
               className="border border-[var(--color-border)] rounded-lg p-3.5 flex flex-col gap-2.5"
             >
               <div className="flex items-center gap-2">
-                <input
-                  type="text"
+                <EmojiField
                   value={ws.icon}
-                  onChange={(e) => onUpdateWorkspace(ws.id, { icon: e.target.value.slice(0, 6) })}
-                  maxLength={6}
-                  className="w-14 px-2 py-1.5 text-sm text-center rounded-md bg-transparent border border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                  onChange={(icon) => onUpdateWorkspace(ws.id, { icon })}
+                  className="w-14 !h-9 !text-sm"
                 />
                 <input
                   type="text"
                   value={ws.name}
                   onChange={(e) => onUpdateWorkspace(ws.id, { name: e.target.value })}
-                  className="flex-1 min-w-0 px-2.5 py-1.5 text-sm font-semibold rounded-md bg-transparent border border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
+                  className="flex-1 min-w-0 px-2.5 py-1.5 text-[16px] font-semibold rounded-md bg-transparent border border-[var(--color-border)] text-[var(--color-ink)] outline-none focus:border-[var(--color-accent)] transition-colors"
                 />
                 <GhostToggle
                   active={ws.hidden}

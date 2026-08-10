@@ -109,7 +109,7 @@ export default function TodoApp() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder="Search by text or #tag..."
-          className="w-full h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors mb-3"
+          className="w-full h-11 px-3 text-[16px] rounded-lg bg-transparent border-2 border-[var(--color-border)] text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none focus:border-[var(--color-accent)] transition-colors mb-3"
         />
 
         <div className="flex gap-2.5 mb-4">

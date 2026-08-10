@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Modal } from "../ui/Modal";
 import {
   TextField,
+  EmojiField,
   DateTimeField,
   PrimaryButton,
   OutlineButton,
@@ -90,7 +91,8 @@ export function ProjectModal({
   const addedTasks = todos.filter((t) => t.workspaceId === workspaceId);
 
   return (
-    <Modal open={open} onClose={onClose} title="New workspace" maxWidth="max-w-[560px]">
+    // same maxWidth as NewTaskModal so the input boxes are identical
+    <Modal open={open} onClose={onClose} title="New workspace" maxWidth="max-w-[380px]">
       <SectionLabel>Workspace details</SectionLabel>
 
       <div className="flex items-center gap-2.5">
@@ -110,12 +112,10 @@ export function ProjectModal({
       </p>
 
       <div className="flex items-center gap-2.5">
-        <TextField
+        <EmojiField
           value={draft.icon}
-          onChange={(e) => patchMeta({ icon: e.target.value.slice(0, 6) })}
-          maxLength={6}
-          placeholder="💼"
-          className="w-20 text-center"
+          onChange={(icon) => patchMeta({ icon })}
+          className="w-20"
         />
         <ColorSwatchRow
           selectedColor={draft.color}
@@ -123,7 +123,7 @@ export function ProjectModal({
         />
       </div>
       <p className="text-xs text-[var(--color-ink-muted)] m-0">
-        Icon or emoji (up to 6 characters) and color tint this project's name everywhere it appears.
+        Optional emoji icon and a color to tint this project's name everywhere it appears.
       </p>
 
       <div className="h-px bg-[var(--color-border)] my-1" />

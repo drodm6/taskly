@@ -1,4 +1,5 @@
 import { WORKSPACE_COLORS } from "../../constants";
+import { filterEmojiOnly } from "../../utils/date";
 
 // =========================================================
 // UI PRIMITIVES
@@ -6,9 +7,13 @@ import { WORKSPACE_COLORS } from "../../constants";
 // times now live here once each.
 // =========================================================
 
-// shared base so every input in the app is exactly the same size
+// shared base so every input in the app is exactly the same size.
+// shrink-0 matters inside tall scrolling modals, where flex children
+// would otherwise be compressed below their set height.
+// text-[16px] is deliberate: iOS Safari auto-zooms the whole page when
+// you focus an input smaller than 16px, which made the layout jump.
 const INPUT_BASE =
-  "h-11 px-3 text-[15px] rounded-lg bg-transparent border-2 border-[var(--color-border)] " +
+  "shrink-0 h-11 px-3 text-[16px] rounded-lg bg-transparent border-2 border-[var(--color-border)] " +
   "text-[var(--color-ink)] placeholder-[var(--color-ink-muted)] outline-none " +
   "focus:border-[var(--color-accent)] transition-colors";
 
@@ -22,6 +27,23 @@ export function TextField({ value, onChange, placeholder, maxLength, disabled, c
       maxLength={maxLength}
       disabled={disabled}
       className={`${INPUT_BASE} disabled:opacity-60 ${className}`}
+    />
+  );
+}
+
+// icon picker that accepts emoji only — typed letters/numbers are
+// discarded as they're entered, so the field can never hold text.
+// Optional: leaving it empty is valid.
+export function EmojiField({ value, onChange, className = "" }) {
+  return (
+    <input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(filterEmojiOnly(e.target.value))}
+      placeholder="💼"
+      inputMode="text"
+      title="Emoji only — letters and numbers aren't accepted"
+      className={`${INPUT_BASE} text-center ${className}`}
     />
   );
 }
@@ -58,7 +80,11 @@ export function PrimaryButton({ onClick, children, className = "" }) {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2.5 text-[15px] font-semibold rounded-lg bg-[var(--color-accent)] text-black hover:brightness-110 active:translate-y-0.5 transition-all ${className}`}
+      // active:brightness instead of active:translate — a transform moved
+      // the button out from under your finger mid-tap, so touchend landed
+      // outside it and no click fired. That's what caused the
+      // "have to press it several times" behaviour.
+      className={`px-4 py-2.5 text-[15px] font-semibold rounded-lg bg-[var(--color-accent)] text-black hover:brightness-110 active:brightness-90 transition-all ${className}`}
     >
       {children}
     </button>
@@ -92,7 +118,9 @@ export function SectionLabel({ children, className = "" }) {
 
 export function SegmentedControl({ options, value, onChange }) {
   return (
-    <div className="flex rounded-lg border-2 border-[var(--color-border)] overflow-hidden">
+    // shrink-0: inside a scrolling flex-col modal, children shrink by
+    // default — which squashed these buttons until the labels clipped
+    <div className="shrink-0 flex rounded-lg border-2 border-[var(--color-border)] overflow-hidden">
       {options.map((opt) => (
         <button
           key={opt.value}
