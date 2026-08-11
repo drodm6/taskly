@@ -17,6 +17,8 @@ export function Sidebar({
   onSelectWorkspace,
   onSelectAll,
   onSelectDone,
+  notificationPermission,
+  onEnableNotifications,
 }) {
   if (!open) return null;
 
@@ -94,6 +96,29 @@ export function Sidebar({
         >
           ✅ Done
         </button>
+
+        {/* only shown while permission is still askable — once granted
+            or denied, the browser won't show the prompt again anyway */}
+        {notificationPermission === "default" && (
+          <>
+            <div className="h-px bg-[var(--color-border)] my-2" />
+            <button
+              onClick={onEnableNotifications}
+              className="text-left px-3 py-2.5 rounded-lg text-[15px] font-semibold text-[var(--color-ink)] hover:bg-[var(--color-accent-light)] transition-colors"
+            >
+              🔔 Enable reminders
+            </button>
+          </>
+        )}
+
+        {notificationPermission === "granted" && (
+          <>
+            <div className="h-px bg-[var(--color-border)] my-2" />
+            <p className="px-3 py-1 text-xs text-[var(--color-ink-muted)] m-0">
+              🔔 Reminders on — 1 day and 1 hour before each countdown, while the app is open.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

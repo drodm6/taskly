@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { useTaskly } from "./hooks/useTaskly";
 import { useNow } from "./hooks/useNow";
+import { useReminders } from "./hooks/useReminders";
 import { getVisibleTodos } from "./utils/selectors";
+import { load, save } from "./utils/storage";
+import { getPermission, requestPermission } from "./utils/notifications";
 import { TaskItem } from "./components/TaskItem";
 import { WorkspaceTabs } from "./components/WorkspaceTabs";
 import { Sidebar } from "./components/Sidebar";
@@ -11,6 +14,7 @@ import { ProjectModal } from "./components/modals/ProjectModal";
 import { EditTaskModal } from "./components/modals/EditTaskModal";
 import { DashboardModal } from "./components/modals/DashboardModal";
 import { SettingsModal } from "./components/modals/SettingsModal";
+import { WelcomeModal } from "./components/modals/WelcomeModal";
 
 // =========================================================
 // TodoApp
@@ -35,6 +39,27 @@ export default function TodoApp() {
   } = useTaskly();
 
   const now = useNow();
+
+  // ---- welcome screen (shown once, tracked in localStorage) ----
+  const [showWelcome, setShowWelcome] = useState(() => !load("welcomed", false));
+
+  // ---- notification permission ----
+  const [permission, setPermission] = useState(() => getPermission());
+
+  // fires 1-day and 1-hour reminders for countdown tasks while the app
+  // is open. Background delivery would need a push server, which this
+  // app deliberately doesn't have.
+  useReminders(todos, now, permission === "granted");
+
+  async function handleEnableNotifications() {
+    const result = await requestPermission();
+    setPermission(result);
+  }
+
+  function dismissWelcome() {
+    save("welcomed", true);
+    setShowWelcome(false);
+  }
 
   // ---- navigation ----
   const [activeWorkspaceId, setActiveWorkspaceId] = useState("all");
@@ -194,6 +219,8 @@ export default function TodoApp() {
         onSelectWorkspace={goToWorkspace}
         onSelectAll={goToAllTasks}
         onSelectDone={goToDone}
+        notificationPermission={permission}
+        onEnableNotifications={handleEnableNotifications}
       />
 
       <DashboardModal
@@ -243,6 +270,14 @@ export default function TodoApp() {
         todo={editingTodo}
         onClose={() => setEditingTodo(null)}
         onApply={updateTodo}
+      />
+
+      {/* z-60 — sits above everything on first launch */}
+      <WelcomeModal
+        open={showWelcome}
+        onDismiss={dismissWelcome}
+        onEnableNotifications={handleEnableNotifications}
+        canAskNotifications={permission === "default"}
       />
     </div>
   );

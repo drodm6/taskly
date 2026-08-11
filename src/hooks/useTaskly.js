@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { load, save } from "../utils/storage";
 
 // =========================================================
 // useTaskly — the app's data layer
@@ -9,11 +10,25 @@ import { useState } from "react";
 // Linked by workspaceId only — a task points at its project
 // rather than living inside it, so task operations never need
 // to know projects exist.
+//
+// Both arrays persist to localStorage: on-device only, no server.
 // =========================================================
 
 export function useTaskly() {
-  const [todos, setTodos] = useState([]);
-  const [workspaces, setWorkspaces] = useState([]);
+  // lazy initializers — the function form runs only on the first
+  // render, so localStorage isn't re-read on every state change
+  const [todos, setTodos] = useState(() => load("todos", []));
+  const [workspaces, setWorkspaces] = useState(() => load("workspaces", []));
+
+  // save whenever either changes; separate effects so editing a task
+  // doesn't also rewrite the untouched workspaces entry
+  useEffect(() => {
+    save("todos", todos);
+  }, [todos]);
+
+  useEffect(() => {
+    save("workspaces", workspaces);
+  }, [workspaces]);
 
   // ---- todos ----
 
