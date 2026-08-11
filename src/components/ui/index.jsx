@@ -182,3 +182,32 @@ export function StatCard({ label, value }) {
     </div>
   );
 }
+
+// sliding on/off switch for dark ↔ light. The knob is absolutely
+// positioned and animates across the track, with the sun/moon icons
+// sitting behind it.
+export function ThemeToggle({ theme, onToggle }) {
+  const isLight = theme === "light";
+
+  return (
+    <button
+      onClick={onToggle}
+      role="switch"
+      aria-checked={isLight}
+      aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
+      title={`Switch to ${isLight ? "dark" : "light"} mode`}
+      className="relative shrink-0 w-14 h-8 rounded-full border-2 border-[var(--color-border)] bg-[var(--color-surface)] transition-colors"
+    >
+      <span className="absolute inset-0 flex items-center justify-between px-1.5 text-[11px] pointer-events-none">
+        <span className={isLight ? "opacity-40" : "opacity-100"}>🌙</span>
+        <span className={isLight ? "opacity-100" : "opacity-40"}>☀️</span>
+      </span>
+
+      <span
+        className={`absolute top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-[var(--color-accent)] shadow transition-transform duration-200 ${
+          isLight ? "translate-x-[26px]" : "translate-x-[2px]"
+        }`}
+      />
+    </button>
+  );
+}

@@ -1,4 +1,4 @@
-import { PrimaryButton, OutlineButton } from "../ui";
+import { PrimaryButton, OutlineButton, SectionLabel } from "../ui";
 
 // =========================================================
 // WelcomeModal — shown once, on first launch
@@ -8,7 +8,14 @@ import { PrimaryButton, OutlineButton } from "../ui";
 // (a click), never automatically on page load.
 // =========================================================
 
-export function WelcomeModal({ open, onDismiss, onEnableNotifications, canAskNotifications }) {
+export function WelcomeModal({
+  open,
+  onDismiss,
+  onEnableNotifications,
+  canAskNotifications,
+  theme,
+  onSelectTheme,
+}) {
   if (!open) return null;
 
   return (
@@ -47,6 +54,30 @@ export function WelcomeModal({ open, onDismiss, onEnableNotifications, canAskNot
           </Feature>
         </div>
 
+        <div className="h-px bg-[var(--color-border)]" />
+
+        {/* theme picker — the choice is applied live, so tapping an
+            option previews it immediately behind the modal */}
+        <div className="flex flex-col gap-2">
+          <SectionLabel>Choose your look</SectionLabel>
+          <div className="flex gap-2.5">
+            <ThemeChoice
+              active={theme === "dark"}
+              onClick={() => onSelectTheme("dark")}
+              swatch="bg-[#0a0a0a] border-[#262626]"
+              icon="🌙"
+              label="Dark"
+            />
+            <ThemeChoice
+              active={theme === "light"}
+              onClick={() => onSelectTheme("light")}
+              swatch="bg-white border-[#d4d4d4]"
+              icon="☀️"
+              label="Light"
+            />
+          </div>
+        </div>
+
         <div className="flex flex-col gap-2 mt-1">
           {canAskNotifications && (
             <OutlineButton onClick={onEnableNotifications}>
@@ -57,6 +88,28 @@ export function WelcomeModal({ open, onDismiss, onEnableNotifications, canAskNot
         </div>
       </div>
     </div>
+  );
+}
+
+function ThemeChoice({ active, onClick, swatch, icon, label }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 flex flex-col items-center gap-2 py-3 rounded-lg border-2 transition-colors ${
+        active
+          ? "border-[var(--color-accent)] bg-[var(--color-accent-light)]"
+          : "border-[var(--color-border)]"
+      }`}
+    >
+      {/* a small preview of the actual page colour, with an orange
+          accent bar so both options read as the same brand */}
+      <span className={`w-10 h-6 rounded border ${swatch} flex items-center justify-end pr-1`}>
+        <span className="w-2 h-3 rounded-sm bg-[#f97316]" />
+      </span>
+      <span className="text-xs font-semibold text-[var(--color-ink)]">
+        {icon} {label}
+      </span>
+    </button>
   );
 }
 

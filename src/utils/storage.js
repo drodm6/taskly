@@ -11,6 +11,7 @@ const KEYS = {
   workspaces: "taskly:workspaces",
   welcomed: "taskly:welcomed",
   notified: "taskly:notified",
+  theme: "taskly:theme",
 };
 
 // reads + parses a key. Never throws: private browsing can block

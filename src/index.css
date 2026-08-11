@@ -1,4 +1,11 @@
 @import 'tailwindcss';
+
+/* =========================================================
+   THEME
+   Dark is the default. The light theme redefines the same
+   variable names under .light, so no component needs to know
+   which theme is active — they all just read the variables.
+   ========================================================= */
 @theme {
   --color-canvas: #0a0a0a;
   --color-ink: #ffffff;
@@ -8,11 +15,40 @@
   --color-border: #262626;
   --color-surface: #171717;
 }
-html, body { background-color: #0a0a0a; color: #ffffff; }
-input[type="date"], input[type="time"] {
-  -webkit-appearance: none; appearance: none;
-  width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box;
+
+/* light theme: white page, near-black components.
+   Accent stays orange so the brand reads the same in both. */
+html.light {
+  --color-canvas: #ffffff;
+  --color-ink: #0a0a0a;
+  --color-ink-muted: #6b7280;
+  --color-accent: #f97316;
+  --color-accent-light: rgba(249, 115, 22, 0.12);
+  --color-border: #d4d4d4;
+  --color-surface: #f4f4f5;
 }
+
+html, body {
+  background-color: var(--color-canvas);
+  color: var(--color-ink);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* dark native date/time widgets by default; light ones in light mode */
+input[type="date"], input[type="time"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  color-scheme: dark;
+}
+html.light input[type="date"],
+html.light input[type="time"] {
+  color-scheme: light;
+}
+
 @keyframes workspaceFadeIn {
   from { opacity: 0; transform: translateY(-6px); }
   to { opacity: 1; transform: translateY(0); }

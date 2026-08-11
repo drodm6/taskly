@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTaskly } from "./hooks/useTaskly";
 import { useNow } from "./hooks/useNow";
+import { useTheme } from "./hooks/useTheme";
 import { useReminders } from "./hooks/useReminders";
 import { getVisibleTodos } from "./utils/selectors";
 import { load, save } from "./utils/storage";
@@ -8,7 +9,7 @@ import { getPermission, requestPermission } from "./utils/notifications";
 import { TaskItem } from "./components/TaskItem";
 import { WorkspaceTabs } from "./components/WorkspaceTabs";
 import { Sidebar } from "./components/Sidebar";
-import { PrimaryButton, OutlineButton } from "./components/ui";
+import { PrimaryButton, OutlineButton, ThemeToggle } from "./components/ui";
 import { NewTaskModal } from "./components/modals/NewTaskModal";
 import { ProjectModal } from "./components/modals/ProjectModal";
 import { EditTaskModal } from "./components/modals/EditTaskModal";
@@ -39,6 +40,7 @@ export default function TodoApp() {
   } = useTaskly();
 
   const now = useNow();
+  const { theme, setTheme, toggleTheme } = useTheme();
 
   // ---- welcome screen (shown once, tracked in localStorage) ----
   const [showWelcome, setShowWelcome] = useState(() => !load("welcomed", false));
@@ -125,6 +127,11 @@ export default function TodoApp() {
         <h1 className="font-[var(--font-display)] text-xl sm:text-2xl font-semibold uppercase tracking-wide m-0">
           Taskly
         </h1>
+
+        {/* ml-auto pushes the toggle to the far right of the header */}
+        <div className="ml-auto">
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
+        </div>
       </div>
 
       {/* ---------- main content ---------- */}
@@ -278,6 +285,8 @@ export default function TodoApp() {
         onDismiss={dismissWelcome}
         onEnableNotifications={handleEnableNotifications}
         canAskNotifications={permission === "default"}
+        theme={theme}
+        onSelectTheme={setTheme}
       />
     </div>
   );
