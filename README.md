@@ -10,24 +10,24 @@ Taskly started as a plain HTML/CSS/JS button with a click handler. It's now a fu
 
 ### Creating, editing, and organizing tasks
 <p float="left">
-  <img src="./screenshots/tasks-1.png" width="45%" alt="Taskly home screen showing the task list, search bar, and workspace tabs" />
-  <img src="./screenshots/tasks-2.png" width="45%" alt="Taskly task creation and editing modal, including project assignment and marking a task done" />
+  <img src="./screenshots/task1.jpg" width="45%" alt="Taskly home screen showing the task list, search bar, and workspace tabs" />
+  <img src="./screenshots/task2.jpg" width="45%" alt="Taskly task creation and editing modal, including project assignment and marking a task done" />
 </p>
 
 The core loop of the app, in two screens: adding a task through the **"+ New Task"** modal (with an optional date, tag, and Standard/Countdown type), editing an existing one, assigning it to a **workspace**, and tapping the small circle to mark it complete — which strikes the text through and dims it rather than deleting it outright.
 
 ### ☰ Navigation drawer
-<img src="./screenshots/hamburger-menu.png" width="45%" alt="Taskly's slide-out hamburger menu showing Dashboard, Projects, All tasks, and Done" />
+<img src="./screenshots/hamburger-menu.png.jpg" width="45%" alt="Taskly's slide-out hamburger menu showing Dashboard, Projects, All tasks, and Done" />
 
 Tapping the orange ☰ button opens the app's navigation drawer: **Dashboard**, **Projects** (an animated, one-by-one list of every workspace with its own completion percentage), **All tasks**, and **Done** — a dedicated view collecting every completed task across every project.
 
 ### 📊 Dashboard
-<img src="./screenshots/dashboard.png" width="45%" alt="Taskly dashboard showing total tasks, completed tasks, completion rate, project count, active countdowns, and tasks due today" />
+<img src="./screenshots/dashboard.png.jpg" width="45%" alt="Taskly dashboard showing total tasks, completed tasks, completion rate, project count, active countdowns, and tasks due today" />
 
 A live snapshot of everything happening across the app — computed fresh from your actual task list every time you open it, never stale.
 
 ### 🔔 Notifications
-<img src="./screenshots/notification.png" width="45%" alt="A Taskly reminder notification showing a countdown task due in one hour" />
+<img src="./screenshots/notify.jpg" width="45%" alt="A Taskly reminder notification showing a countdown task due in one hour" />
 
 A real device notification, fired automatically ahead of a countdown task's deadline — no setup required beyond a single permission tap.
 
